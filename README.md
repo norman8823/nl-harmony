@@ -39,11 +39,11 @@ One local browser window brings the moving pieces together.
 
 ![Harmony Companion with Observability and Tasks views](docs/images/companion-observability-tasks.png)
 
-*Tasks contains illustrative mock cards. Usage and allowance figures are historical screenshot measurements, not a promise of available quota.*
+*Harmony Companion brings task management and model observability together: track work on the Kanban board, monitor allowances, and see model-level token usage and cache reuse.*
 
 ![Harmony Inspect view showing run-level diagnostics](docs/images/companion-inspect.png)
 
-*Inspect preserves technical detail: execution outcomes, context measurements, cache counters, and API-equivalent list-cost estimates, not actual charges.*
+*Inspect a task to explore its workflow, agent runs, review evidence, approval history, and detailed resource usage.*
 
 ## Install
 
