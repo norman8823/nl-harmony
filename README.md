@@ -147,25 +147,13 @@ Weekly allowance comes from different provider interfaces: Codex's app-server se
 
 Task state, checkpoints, approval evidence, and run records stay in local `.workflow/` and `.direct-runs/` directories. Keep those paths, local configuration, and credentials out of Git. Harmony has no required cloud dashboard or billing service.
 
-## Verify and explore
-
-The core tests run offline with the Python standard library:
-
-```bash
-python3 -B -m unittest discover -s harmony/direct-workflow/tests -p 'test_*.py'
-python3 -B -m unittest discover -s harmony/task-board/tests -p 'test_*.py'
-python3 -B -m unittest discover -s tests -p 'test_*.py'
-```
-
-The optional GitHub App publisher and PR guard provide additional release controls when explicitly configured; neither grants autonomous publication.
-
 **Harmony is a toolkit for coordinating the agents you already use.**
 
 **Better Together.**
 
 ## Questions?
 
-[Read the FAQ](docs/faq.md)
+[Read the FAQ](docs/faq.md) · [Contributing](CONTRIBUTING.md)
 
 ## License
 
