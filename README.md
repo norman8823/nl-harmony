@@ -161,6 +161,6 @@ Task state, checkpoints, approval evidence, and run records stay in local `.work
 
 ### About NL Intelligence
 
-NL Intelligence is an independent applied AI lab building practical tools that turn emerging AI capabilities into useful software.
+NL Intelligence is an independent applied AI lab building tools that turn emerging AI capabilities into useful software.
 
 Harmony is an open-source project by NL Intelligence.
