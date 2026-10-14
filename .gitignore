@@ -1,0 +1,33 @@
+# Private operational state (never commit)
+# streams, evidence, authorization and run records (never committed)
+.workflow/
+.direct-runs/
+*.stream.jsonl
+
+# Local publisher identity; copy harmony/direct-workflow/worker-publisher.example.json
+worker-publisher.json
+*.pem
+
+# Local project configs copied from examples/
+/.claude/settings.local.json
+/harmony.json
+
+# Python build and caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Common local artifacts
+.venv/
+venv/
+.env
+.DS_Store
+*.log
+*.swp
+.idea/
+.vscode/

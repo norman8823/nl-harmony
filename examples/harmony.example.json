@@ -1,0 +1,25 @@
+{
+  "workflow_dir": ".workflow",
+  "runs_dir": ".direct-runs",
+  "roles": {
+    "planner": {
+      "command": "codex",
+      "model": "YOUR_CODEX_MODEL"
+    },
+    "writer": {
+      "command": "claude",
+      "model": "opus"
+    },
+    "reviewer": {
+      "command": "codex",
+      "model": "YOUR_CODEX_MODEL"
+    },
+    "correction": {
+      "command": "claude",
+      "model": "opus"
+    }
+  },
+  "board": {
+    "port": 8765
+  }
+}

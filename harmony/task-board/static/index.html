@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Harmony companion</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="shell">
+<header class="bar">
+  <div class="brand">
+    <h1><span aria-hidden="true">🤝</span> Harmony</h1>
+    <p class="byline">by NL Intelligence</p>
+  </div>
+  <div class="global-state">
+    <p id="run-state" class="run-state" data-state="unknown" title="Harmony-managed runs">
+      <span class="dot" aria-hidden="true"></span><span id="run-state-text">Checking…</span>
+    </p>
+    <label class="toggle" title="Refresh Observability and Details every 3 s"><input type="checkbox" id="obs-live" checked> Live</label>
+  </div>
+</header>
+<nav class="tabs" role="tablist" aria-label="Companion views">
+  <button type="button" role="tab" id="tab-observability" aria-controls="panel-observability" aria-selected="true">Observability</button>
+  <button type="button" role="tab" id="tab-kanban" aria-controls="panel-kanban" aria-selected="false" tabindex="-1">Tasks</button>
+</nav>
+
+<section id="panel-observability" class="panel" role="tabpanel" aria-labelledby="tab-observability">
+  <p class="sub" id="obs-meta">Loading…</p>
+  <section id="quota" class="quota-cards" aria-label="Weekly allowance remaining"></section>
+  <div id="overview" class="overview"></div>
+</section>
+
+<!-- Secondary view, not a tab: one task's full report, opened from the
+     overview or a task card (#inspect/<id>). Back or Escape returns. -->
+<section id="inspect" class="panel inspect" aria-labelledby="inspect-title" hidden>
+  <div class="panel-bar">
+    <button type="button" class="ghost small" id="inspect-back">← Back</button>
+    <p class="sub" id="inspect-meta"></p>
+  </div>
+  <h2 id="inspect-title" class="inspect-title" tabindex="-1">Task details</h2>
+  <div id="inspect-body" class="obs-tasks"></div>
+</section>
+
+<section id="panel-kanban" class="panel" role="tabpanel" aria-labelledby="tab-kanban" hidden>
+<!-- Board feedback (say); inside the tab so it never shows elsewhere. -->
+<p id="status" class="status" role="status" aria-live="polite" hidden></p>
+<div class="panel-bar">
+  <p class="sub">Cards show compact token/time totals from completed run records; ▶ marks a running Harmony-managed run.</p>
+  <div class="bar-actions">
+    <label class="toggle" title="Cards someone checked against their ticket record and evidence first (a board check, not testing)"><input type="checkbox" id="verified-first" checked> Record checked first</label>
+    <label class="toggle" title="Only cards someone checked against their ticket record and evidence (a board check, not testing)"><input type="checkbox" id="only-verified"> Only record checked</label>
+    <button id="archive-done" class="ghost" type="button" title="Hide every completed task in Archived, all or none; nothing is deleted or renumbered">Archive completed</button>
+    <button id="show-archived" class="ghost" type="button" aria-pressed="false">Archived</button>
+    <button id="reload" class="ghost" type="button">Reload</button>
+    <button id="new-card" class="primary" type="button" disabled>Add task</button>
+  </div>
+</div>
+
+<main id="lanes" class="lanes" aria-label="Task lanes"></main>
+</section>
+
+<template id="card-template">
+  <article class="card" tabindex="0">
+    <div class="card-top">
+      <span class="id"></span>
+      <span class="flags"></span>
+    </div>
+    <h3 class="title"></h3>
+    <dl class="fields">
+      <dt>Next action</dt><dd class="next-action"></dd>
+      <dt hidden>Owner</dt><dd class="owner" hidden></dd>
+      <dt>Blocker / approval gate</dt><dd class="gate"></dd>
+    </dl>
+    <p class="run-metrics" hidden></p>
+    <div class="links"></div>
+    <div class="defects"></div>
+    <div class="card-actions">
+      <label class="move">Move
+        <select class="move-select" aria-label="Move this card to another stage"></select>
+      </label>
+      <a class="button-link small inspect">Inspect</a>
+      <button class="ghost small lifecycle" type="button">Mark Done</button>
+      <button class="ghost small archive" type="button" hidden>Archive</button>
+      <button class="ghost small edit" type="button">Edit</button>
+    </div>
+  </article>
+</template>
+
+<dialog id="editor">
+  <form id="editor-form" method="dialog">
+    <h2 id="editor-title">Edit card</h2>
+    <p class="hint" id="editor-hint"></p>
+    <label>Title <input name="title" id="f-title" maxlength="500" autocomplete="off"></label>
+    <p class="hint" id="f-title-note" hidden></p>
+    <label>Status
+      <select name="status" id="f-status"></select>
+    </label>
+    <label>Details <textarea name="details" id="f-details" rows="3" maxlength="4000" placeholder="unknown"></textarea></label>
+    <label>Stage
+      <select name="stage" id="f-stage"></select>
+    </label>
+    <label hidden>Owner <input name="owner" id="f-owner" maxlength="200" autocomplete="off" placeholder="unknown"></label>
+    <label>Next action <textarea name="next_action" id="f-next" rows="3" maxlength="2000" placeholder="unknown"></textarea></label>
+    <label>Blocker / approval gate <textarea name="gate" id="f-gate" rows="3" maxlength="2000" placeholder="unknown"></textarea></label>
+    <label>Board notes <textarea name="notes" id="f-notes" rows="3" maxlength="4000"></textarea></label>
+    <label>Evidence / PR links <textarea name="links" id="f-links" rows="4" maxlength="4000"
+      placeholder="One per line:  label | https://... or repo/relative/path"></textarea></label>
+    <label class="inline" title="A board check of this card against its ticket record and evidence; not testing or software verification"><input type="checkbox" id="f-verified"> Record checked against the ticket and evidence</label>
+    <p class="hint" id="editor-note"></p>
+    <p class="error" id="editor-error" hidden></p>
+    <div class="dialog-actions">
+      <button type="button" class="ghost" id="editor-cancel">Cancel</button>
+      <button type="button" class="primary" id="editor-save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "python3 /path/to/Harmony/harmony/direct-workflow/statusline.py --capture-only --quota-file \"$HOME/.harmony/.workflow/telemetry/claude-quota.json\" -- sh -c 'your existing status line command'",
+    "refreshInterval": 60
+  }
+}

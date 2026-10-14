@@ -1,0 +1,11 @@
+{
+  "app_id": 1000001,
+  "app_slug": "your-worker-app",
+  "repo_owner": "your-org",
+  "repo_name": "your-repo",
+  "permissions": {
+    "pull_requests": "write",
+    "contents": "read"
+  },
+  "key_path": "/path/to/your-worker-app.private-key.pem"
+}

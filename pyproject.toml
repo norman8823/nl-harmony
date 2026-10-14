@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "harmony-nlh"
+version = "0.1.0"
+description = "Harmony by NL Intelligence: durable task state, review gates, observability and a local board for direct coding-agent work"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+nlh = "harmony.cli:main"
+
+[tool.setuptools]
+packages = ["harmony"]
+
+[tool.setuptools.package-data]
+harmony = [
+  "direct-workflow/*.py",
+  "direct-workflow/*.json",
+  "direct-workflow/*.md",
+  "task-board/*.py",
+  "task-board/*.md",
+  "task-board/static/*",
+]
