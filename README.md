@@ -5,77 +5,51 @@
 
 **Better Together.**
 
-An open-source orchestration and observability toolkit for AI-powered software development.
+One workflow. Multiple models. Human control.
 
-Harmony brings Claude Code and OpenAI Codex together in a coordinated workflow, combining model orchestration, persistent context, token efficiency, task management, and resource observability.
+Harmony is an open-source orchestration and observability toolkit for developers using Claude Code and OpenAI Codex. It brings planning, implementation, review, task management, and resource visibility together—without adding another hosted platform to manage.
 
 **Less managing. More building.**
 
-![Harmony workflow: Codex plans and reviews, Claude implements and corrects](docs/images/workflow.png)
+![How Harmony works: Codex plans and reviews, Claude implements, and humans approve](docs/images/workflow.png)
 
-## A clear division of work
+## Great agents. Better together.
 
-Codex plans and independently reviews. Claude implements and corrects. Optional
-investigators run alongside implementation, read-only on a pinned commit. Their
-findings feed independent review, and the task graph bounds concurrency. A human
-approves the final action, with commit, merge and publication kept as separate
-permissions.
+A coding assistant can write a function. Building and maintaining software takes more: a clear plan, the right context, a second set of eyes, and a record of what happened when the session ends.
 
-Harmony records this workflow so the next session can resume with the right
-context. Agents and operators invoke the tools explicitly; Harmony does not
-choose models, schedule agents or run an autonomous development pipeline.
+Harmony gives those steps a shared structure. **Codex plans and independently reviews. Claude implements and addresses the findings.** When extra investigation is useful, bounded read-only agents can work in parallel on a pinned commit, then return evidence to the workflow. One primary writer owns the changes.
 
-## Harmony Companion
+The process remains deliberately controlled. Harmony records task state, dependencies, handoffs, and approvals; agents or operators explicitly launch the underlying coding CLIs. It is **not** an autonomous one-prompt development pipeline.
 
-One local interface. **Observability** shows supported weekly allowance,
-provider/model/role token contributions and cache reuse. **Tasks** provides a
-Kanban board with editing, closure, archive and restore. **Inspect** opens the
-underlying task graph, approvals, runs, diagnostics and evidence.
+## Built for work that doesn't fit in one conversation
 
-![Harmony Companion: Observability and Tasks](docs/images/companion-observability-tasks.png)
+**Pick up where you left off.** Harmony's lightweight, CLM-inspired context system keeps a compact working picture of each task: decisions, constraints, evidence, and what to do next. Durable checkpoints and resumable task graphs help a new session continue without rediscovering the project.
 
-*Observability shows recorded measurements. The Tasks panel is an illustrative
-example using mock tasks; it is not the release's canonical task state. Quota
-percentages are historical screenshot readings, not promised account values.*
+**Spend tokens on progress, not repetition.** Selective context loading, concise agent handoffs, and a command-output summarizer keep noisy logs and unnecessary rereads out of the model's immediate context while preserving the original evidence. Focused checks and bounded correction cycles aim to avoid repeating work. Actual savings depend on the task; Harmony does not promise a particular reduction.
 
-![Harmony Companion: actual Inspect view](docs/images/companion-inspect.png)
+**Keep every task accountable.** Work has a canonical task ID, acceptance criteria, recorded runs, and a verification history. Automatic completion requires the applicable workflow checks and approvals. Manual closure is marked differently, and archived work keeps its evidence.
 
-*Actual v0.1 diagnostics from Harmony's own development task. Historical run
-measurements include explicit unknowns; estimated list cost is not an actual charge.*
+**See what your models actually did.** Harmony attributes measured tokens to providers, models, roles, and tasks; distinguishes fresh input, cached input, output, and estimated costs; and shows available Claude and Codex allowance readings with their measurement times. Unknown data stays unknown.
 
-## Keep context small and decisions durable
+**Approve with confidence.** A human can approve, defer, or request specific changes at a bound workflow gate. Permission to commit is not permission to merge or publish, and an approval is not treated as proof that an action succeeded.
 
-**Coordinated models.** Distinct planning, implementation, independent review
-and correction roles. Graph dependencies and concurrency bounds support parallel
-investigation without unlimited review loops. Model selection and agent launches
-remain explicit.
+## Meet Harmony Companion
 
-**Lightweight context.** CLM-inspired selective loading, compact checkpoints,
-resumable sessions and concise handoffs keep working context focused. A command
-output summarizer keeps full evidence while returning a bounded verdict. These
-tools can reduce unnecessary context; Harmony does not guarantee token savings.
+One local browser window brings the moving pieces together.
 
-**Tasks with evidence.** Canonical task IDs survive follow-ups, review and
-correction. Automatic Done requires the recorded workflow, required tests,
-review, approvals and verified final-action execution. Manual closure is labelled
-separately; archive changes visibility only.
+**Tasks** is a persistent Kanban board to create, edit, track, close, reopen, and archive development work. **Observability** shows measured allowance, model/role contributions, cache reuse, and the latest task. Open **Inspect** for the underlying workflow graph, run details, review evidence, and approval history.
 
-**Measured resources.** Exact model identities and requested-model qualifiers,
-role attribution, fresh input/output, cache reads/writes and cache reuse stay
-separate from account allowance. Unsupported readings remain unknown. Detailed
-API-equivalent estimates appear in Inspect, separate from actual charges.
+![Harmony Companion with Observability and Tasks views](docs/images/companion-observability-tasks.png)
 
-**Human control.** Revision-bound approval works through chat-coordinated CLI
-commands or Companion. Request Changes requires durable feedback. Approval
-permits an action; the executing agent must perform, verify and record it before
-completion. The web backend never commits or publishes. The bundled PR guard
-and optional publisher provide additional release controls.
+*Tasks contains illustrative mock cards. Usage and allowance figures are historical screenshot measurements, not a promise of available quota.*
+
+![Harmony Inspect view showing run-level diagnostics](docs/images/companion-inspect.png)
+
+*Inspect preserves technical detail: execution outcomes, context measurements, cache counters, and API-equivalent list-cost estimates—not actual charges.*
 
 ## Install
 
-macOS or Linux, Python **3.10+**, and Git. No frontend build or runtime Python
-dependencies. Authenticated Claude Code and OpenAI Codex CLIs are needed for
-model runs and their supported allowance readings; the board works without them.
+Harmony runs its **orchestration and Companion locally**; Claude and Codex still use their own model services. You'll need macOS or Linux, Python **3.10+**, and Git. Authenticated Claude Code and Codex CLIs are required for model runs and supported allowance readings, but you can explore the board without them.
 
 ```bash
 git clone https://github.com/norman8823/nl-harmony.git
@@ -84,15 +58,16 @@ python3 -m venv .venv
 . .venv/bin/activate
 python3 -m pip install .
 nlh --version
-nlh --help
 ```
 
-## Five-minute Quickstart
+No frontend build or additional runtime Python packages are required.
 
-With the environment above active, create a disposable example project:
+## Five-minute walkthrough
+
+Start with a disposable project so you can try the interface without touching production code:
 
 ```bash
-demo_dir="$(mktemp -d "${TMPDIR:-/tmp}/harmony-demo.XXXXXX")"
+demo_dir="$(mktemp -d /tmp/harmony-demo.XXXXXX)"
 cd "$demo_dir"
 git init -q
 printf '.workflow/\n.direct-runs/\nharmony.json\n' > .gitignore
@@ -106,97 +81,87 @@ JSON
 nlh companion --no-browser --port 0
 ```
 
-Open the printed local URL. Choose **Tasks → Add task**, enter **“Write a greeting”**
-with details **“Add a tiny greeting function and a focused test.”**, then Save.
-The task is Backlog and execution is not authorized. Edit its details, open
-Inspect, or try Mark Done and Reopen; neither operation authorizes a release.
-The Observability tab stays calm when no measurements exist.
+Open the printed local URL. Under **Tasks**, choose **Add task** and create `Write a greeting`, with details `Add a tiny greeting function and a focused test.` Try editing, Inspect, Mark Done, and Reopen. These board actions **do not authorize a code release**.
 
-Stop Companion with Ctrl-C. In the same terminal:
+Stop Companion with **Ctrl-C**. The task record remains in `.workflow/tickets/`. You can inspect it from the CLI:
 
 ```bash
 nlh task resolve --task-id 1
 nlh inspect 1
+```
+
+The empty project is intentional: no model is invoked or charged simply by starting Companion.
+
+## How the workflow runs
+
+Harmony supplies durable records and checked commands; your agents or scripts invoke them. A typical task moves through **plan → implement → independent review → targeted correction (if needed) → human decision → verified action**.
+
+**1. Establish the task and its context.** Define acceptance criteria and obtain execution authorization in the canonical ticket. The checkpoint keeps a compact handoff; the graph tracks allowed phases and bounded parallel investigation.
+
+```bash
 D="$(python3 -c 'from pathlib import Path; import harmony; print(Path(harmony.__file__).parent / "direct-workflow")')"
-python3 "$D/task_checkpoint.py" update --task-id 1 --phase planning --next-action "Define acceptance criteria and obtain execution authorization"
-python3 "$D/task_graph.py" init --task-id 1 --investigators 0 --correction-ceiling 1
+
+python3 "$D/task_checkpoint.py" update --task-id 1 \
+  --phase planning --next-action "Define acceptance criteria"
+python3 "$D/task_graph.py" init --task-id 1 \
+  --investigators 0 --correction-ceiling 1
 python3 "$D/task_graph.py" status --task-id 1
-python3 "$D/run_observability.py" summarize-task --task-id 1 --records-dir .direct-runs
 ```
 
-No model prompt is required for this demo. To run agents, first establish the
-task's acceptance criteria and explicit authorization in its canonical ticket.
-New graphs allow optional read-only investigators to run alongside implementation,
-with a default limit of two running nodes. Review waits for implementation
-and all investigator findings; editing, correction, review, and release
-remain mutually exclusive. Existing graphs retain their original rules.
-The graph records transitions; it does not launch agents. See the
-[workflow guide](harmony/direct-workflow/README.md) and
-[Companion/approval guide](harmony/task-board/README.md).
-
-## Configure and record
-
-Paths in `harmony.json` are relative to that file. The nearest configuration at
-or above the project directory is used; `--project` and `--config` override it.
-See [the portable example](examples/harmony.example.json). Role entries are
-metadata, not an automatic model router.
-
-When a task is authorized, recorded invocations name its existing ID:
+**2. Record work by role.** Once a task is authorized, `nlh record` captures machine-readable execution and attributes the result to its existing task ID. The commands below illustrate the explicit handoffs; prepare the referenced prompt files and use your supported model identifiers.
 
 ```bash
-nlh record --task-id 1 --role planner -- codex exec --json --sandbox read-only -m YOUR_CODEX_MODEL - < plan.md
+nlh record --task-id 1 --role planner -- \
+  codex exec --json --sandbox read-only -m YOUR_CODEX_MODEL - < plan.md
+
 export HARMONY_PR_GUARD="$D/direct-workflow-pr-guard.py"
-nlh record --task-id 1 --role writer -- claude -p "Implement the approved task" --model opus --output-format stream-json --verbose --settings "$D/release-settings.json"
-nlh record --task-id 1 --role reviewer -- codex exec --json --sandbox read-only -m YOUR_CODEX_MODEL - < review.md
+nlh record --task-id 1 --role writer -- \
+  claude -p "Implement the approved task" --model opus \
+  --output-format stream-json --verbose \
+  --settings "$D/release-settings.json"
+
+nlh record --task-id 1 --role reviewer -- \
+  codex exec --json --sandbox read-only -m YOUR_CODEX_MODEL - < review.md
 ```
 
-Use your supported Codex model identifier. Opus is recommended for writers and
-corrections, and is the default in the example configuration. Any explicit
-Claude model is supported with machine-readable output and the packaged
-PR guard settings.
-Other reported Claude models retain their separate attribution. Resumed runs
-use the recorder's `--prior-result` option; session-cumulative totals are not
-summed as fresh invocation usage.
+Corrections return only the named review findings to the writer; the reviewer checks the resulting delta. Optional investigators use a pinned `--base-commit` and read-only isolation. Their findings must be recorded before the review phase can finish. The graph constrains execution; **it does not automatically spawn agents or choose models**.
 
-Investigators additionally require `--base-commit COMMIT_SHA`. The recorder
-uses a temporary detached Git worktree at that exact commit and records the
-SHA read. Codex requires an explicit read-only sandbox; Claude requires
-explicit write/execution-tool denial, `--restricted`, and isolated settings. See the workflow
-guide for the complete checked invocation. Historical records without this
-proof remain unknown.
-
-At a human gate, an agent presents the completion summary and verification:
+**3. Request a decision, then prove the outcome.** When the required graph steps and review pass, the executing agent can request approval for a *specific* final action:
 
 ```bash
-nlh approval request 1 --action commit --summary "Verified local changes ready to commit" --evidence evidence/verification.md
+nlh approval request 1 --action commit \
+  --summary "Verified local changes ready to commit" \
+  --evidence evidence/verification.md
 nlh approval show 1 --json
 ```
 
-These commands require a completed implementation and passing review graph;
-they are not part of the unapproved demo. A human decision names the displayed
-request, gate and binding. Commit approval grants no merge or publication. The
-agent executes and verifies the approved action, records it with
-`nlh approval execute`, then completes any separately authorized workflow gate.
+The human approves, requests changes with feedback, or defers. If approved, the agent must perform the action, verify it, and record evidence using `nlh approval execute`. Commit, merge, and publish are separate permissions; the Companion backend performs none of them itself.
 
-## Measurement limits and privacy
+For more on CLI options, use `nlh --help`, `nlh record --help`, and the in-repository [workflow](harmony/direct-workflow/README.md) and [Companion/approval](harmony/task-board/README.md) guides.
 
-Codex weekly allowance uses its official app-server seven-day rate-limit window.
-Claude allowance uses its documented native `/usage` command, about every five
-minutes, with one local owner/cache per installation and bounded retry/backoff.
-Claude's terminal format is not a versioned JSON API; unsupported output fails
-closed. Optional status-line capture preserves an existing command and output.
-No direct credential reads, private HTTP polling or quota estimates from tokens.
+## What's measured—and what isn't
 
-Turn off background allowance collection with `HARMONY_CODEX_QUOTA=0` and
-`HARMONY_CLAUDE_CLI_QUOTA=0`. Claude needs an authenticated trusted CLI and a
-pseudo-terminal. Stale readings retain their original timestamp. Codex reports
-completion-only token measurements and may supply no resolved model identity.
-Subagent attribution appears only when existing counters support it. The running
-indicator confirms a managed invocation, not remote model computation.
+Harmony keeps **per-invocation token totals** separate from session-cumulative data so runs aren't double-counted. It records model identities when reported, qualifies a Codex model when only the requested name is known, and treats unreported values as unknown rather than zero. Cache reuse describes measured input, **not money saved**. API-equivalent estimates are not subscription charges.
 
-Keep `.workflow/`, `.direct-runs/`, local configuration, streams, credentials and
-evidence out of Git. There is no hosted service or billing engine. For development,
-optional DOM tests require Node and jsdom; production does not.
+Weekly allowance comes from different provider interfaces: Codex's app-server seven-day rate limits and Claude Code's authenticated native `/usage` view, checked locally about every five minutes. Claude's terminal display is not a versioned API, so parsing may fail; stale readings keep their original timestamps. Disable collection with `HARMONY_CODEX_QUOTA=0` or `HARMONY_CLAUDE_CLI_QUOTA=0` if needed.
+
+Task state, checkpoints, approval evidence, and run records stay in local `.workflow/` and `.direct-runs/` directories. Keep those paths, local configuration, and credentials out of Git. Harmony has no required cloud dashboard or billing service.
+
+## Verify and explore
+
+The core tests run offline with the Python standard library:
+
+```bash
+python3 -B -m unittest discover -s harmony/direct-workflow/tests -p 'test_*.py'
+python3 -B -m unittest discover -s harmony/task-board/tests -p 'test_*.py'
+python3 -B -m unittest discover -s tests -p 'test_*.py'
+```
+
+The optional GitHub App publisher and PR guard provide additional release controls when explicitly configured; neither grants autonomous publication.
+
+**Harmony is a toolkit for coordinating the agents you already use—not a new model.**
+
+**Better Together.**
 
 ## License
 
