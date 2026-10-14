@@ -5,7 +5,7 @@
 
 **Better Together.**
 
-Harmony is an open-source orchestration and observability toolkit for developers using both Claude Code and OpenAI Codex. It brings planning, implementation, review, task management, and resource visibility together—without adding another hosted platform to manage.
+Harmony is an open-source orchestration and observability toolkit for developers using both Claude Code and OpenAI Codex. It brings planning, implementation, review, task management, and resource visibility together, without adding another hosted platform to manage.
 
 **Less managing. More building.**
 
@@ -43,7 +43,7 @@ One local browser window brings the moving pieces together.
 
 ![Harmony Inspect view showing run-level diagnostics](docs/images/companion-inspect.png)
 
-*Inspect preserves technical detail: execution outcomes, context measurements, cache counters, and API-equivalent list-cost estimates—not actual charges.*
+*Inspect preserves technical detail: execution outcomes, context measurements, cache counters, and API-equivalent list-cost estimates, not actual charges.*
 
 ## Install
 
@@ -122,7 +122,7 @@ nlh record --task-id 1 --role reviewer -- \
   codex exec --json --sandbox read-only -m YOUR_CODEX_MODEL - < review.md
 ```
 
-Corrections return only the named review findings to the writer; the reviewer checks the resulting delta. Optional investigators use a pinned `--base-commit` and read-only isolation. Their findings must be recorded before the review phase can finish. The graph constrains execution; **it does not automatically spawn agents or choose models**.
+Corrections return only the named review findings to the writer; the reviewer checks the resulting delta. Optional investigators use a pinned `--base-commit` and read-only isolation. Their findings must be recorded before review can start. The graph constrains execution; **it does not automatically spawn agents or choose models**.
 
 **3. Request a decision, then prove the outcome.** When the required graph steps and review pass, the executing agent can request approval for a *specific* final action:
 
@@ -137,7 +137,7 @@ The human approves, requests changes with feedback, or defers. If approved, the 
 
 For more on CLI options, use `nlh --help`, `nlh record --help`, and the in-repository [workflow](harmony/direct-workflow/README.md) and [Companion/approval](harmony/task-board/README.md) guides.
 
-## What's measured—and what isn't
+## What's measured (and what isn't)
 
 Harmony keeps **per-invocation token totals** separate from session-cumulative data so runs aren't double-counted. It records model identities when reported, qualifies a Codex model when only the requested name is known, and treats unreported values as unknown rather than zero. Cache reuse describes measured input, **not money saved**. API-equivalent estimates are not subscription charges.
 
