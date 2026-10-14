@@ -5,15 +5,13 @@
 
 **Better Together.**
 
-One workflow. Multiple models. Human control.
-
-Harmony is an open-source orchestration and observability toolkit for developers using Claude Code and OpenAI Codex. It brings planning, implementation, review, task management, and resource visibility together—without adding another hosted platform to manage.
+Harmony is an open-source orchestration and observability toolkit for developers using both Claude Code and OpenAI Codex. It brings planning, implementation, review, task management, and resource visibility together—without adding another hosted platform to manage.
 
 **Less managing. More building.**
 
 ![How Harmony works: Codex plans and reviews, Claude implements, and humans approve](docs/images/workflow.png)
 
-## Great agents. Better together.
+## The best of both worlds.
 
 A coding assistant can write a function. Building and maintaining software takes more: a clear plan, the right context, a second set of eyes, and a record of what happened when the session ends.
 
@@ -64,7 +62,7 @@ No frontend build or additional runtime Python packages are required.
 
 ## Five-minute walkthrough
 
-Start with a disposable project so you can try the interface without touching production code:
+Start with a sample project so you can try the interface:
 
 ```bash
 demo_dir="$(mktemp -d /tmp/harmony-demo.XXXXXX)"
@@ -159,7 +157,7 @@ python3 -B -m unittest discover -s tests -p 'test_*.py'
 
 The optional GitHub App publisher and PR guard provide additional release controls when explicitly configured; neither grants autonomous publication.
 
-**Harmony is a toolkit for coordinating the agents you already use—not a new model.**
+**Harmony is a toolkit for coordinating the agents you already use.**
 
 **Better Together.**
 
