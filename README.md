@@ -60,6 +60,8 @@ nlh --version
 
 No frontend build or additional runtime Python packages are required.
 
+**Need a command?** Browse the [CLI Command Reference](docs/cli-reference.md) for every `nlh` command, examples, and approval syntax.
+
 ## Five-minute walkthrough
 
 Start with a sample project so you can try the interface:
