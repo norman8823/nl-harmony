@@ -165,7 +165,7 @@ The optional GitHub App publisher and PR guard provide additional release contro
 
 ## Questions?
 
-Curious how Harmony compares with AGENTS.md, OpenRouter, and other agent tools? [Read the FAQ](docs/faq.md) for practical benefits, model flexibility, and current limitations.
+[Read the FAQ](docs/faq.md)
 
 ## License
 
