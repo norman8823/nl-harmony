@@ -153,8 +153,14 @@ Task state, checkpoints, approval evidence, and run records stay in local `.work
 
 ## Questions?
 
-[Read the FAQ](docs/faq.md) · [Contributing](CONTRIBUTING.md)
+[Read the FAQ](docs/faq.md)
 
 ## License
 
 [MIT](LICENSE) · © 2026 NL Intelligence
+
+### About NL Intelligence
+
+NL Intelligence is an independent applied AI lab building practical tools that turn emerging AI capabilities into useful software.
+
+Harmony is an open-source project by NL Intelligence.
