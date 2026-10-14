@@ -77,20 +77,15 @@ macOS or Linux, Python **3.10+**, and Git. No frontend build or runtime Python
 dependencies. Authenticated Claude Code and OpenAI Codex CLIs are needed for
 model runs and their supported allowance readings; the board works without them.
 
-After the public repository is released:
-
 ```bash
-git clone https://github.com/norman8823/NL-Harmony.git
-cd NL-Harmony
+git clone https://github.com/norman8823/nl-harmony.git
+cd nl-harmony
 python3 -m venv .venv
 . .venv/bin/activate
 python3 -m pip install .
 nlh --version
 nlh --help
 ```
-
-For a local release snapshot, begin with `cd /path/to/NL-Harmony` and run the
-same virtual-environment and installation commands. Version: **0.1.0**.
 
 ## Five-minute Quickstart
 
