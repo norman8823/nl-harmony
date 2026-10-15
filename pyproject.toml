@@ -25,4 +25,5 @@ harmony = [
   "task-board/*.py",
   "task-board/*.md",
   "task-board/static/*",
+  "skills/harmony-setup/SKILL.md",
 ]
