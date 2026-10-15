@@ -156,6 +156,22 @@ dialog::backdrop { background: rgba(0, 0, 0, .6); }
 
 
 
+/* ---- first-run assisted setup ---- */
+#setup-guide { width: min(530px, 94vw); max-height: 90vh; overflow-y: auto; }
+.setup-content { padding: 20px 22px; }
+.setup-content h2 { margin: 2px 0 8px; font-size: 20px; }
+.setup-content h3 { margin: 18px 0 6px; font-size: 13px; }
+.setup-content p { margin: 6px 0; font-size: 13px; }
+.setup-content .setup-eyebrow { color: var(--dim); font-size: 11px; letter-spacing: 0.1em; }
+.setup-checks { list-style: none; padding: 0; margin: 10px 0 0; }
+.setup-checks li { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+.setup-checks strong { display: block; font-weight: 600; }
+.setup-checks span { display: block; color: var(--dim); }
+.setup-checks li[data-state="ready"] strong::before { content: "✓ "; color: var(--ok); }
+.setup-checks li[data-state="missing"] strong::before { content: "○ "; color: var(--warn); }
+#setup-command { display: block; padding: 10px; margin: 8px 0; border: 1px solid var(--line); border-radius: 7px; user-select: all; }
+#setup-guide .dialog-actions { flex-wrap: wrap; }
+
 /* ---- companion tabs ---- */
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 16px; }
 .tabs [role="tab"] { background: transparent; color: var(--dim); border: 1px solid transparent; border-radius: 999px; padding: 6px 12px; }
