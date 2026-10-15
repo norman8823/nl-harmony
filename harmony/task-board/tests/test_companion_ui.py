@@ -123,6 +123,21 @@ class CompanionPage(BoardFixture):
         self.assertEqual(out["errors"], [])
         return out["snapshots"]
 
+    def test_first_run_wizard_shows_checks_and_can_reopen(self):
+        checks = [{"id": "codex", "label": "Codex CLI", "state": "ready", "detail": "Found on PATH"},
+                  {"id": "claude", "label": "Claude Code CLI", "state": "missing", "detail": "Install Claude"}]
+        responses = payloads([], [])
+        responses["/api/setup"] = {"body": {"ok": True, "checks": checks,
+                                             "ready_for_assisted_setup": False}}
+        result = self.page("", responses, [{"snapshot": "initial"},
+                                           {"click": "#setup-close"}, {"snapshot": "skipped"},
+                                           {"click": "#setup-open"}, {"snapshot": "reopened"}])
+        self.assertTrue(result["initial"]["setup"]["open"])
+        self.assertEqual([c["state"] for c in result["initial"]["setup"]["checks"]],
+                         ["ready", "missing"])
+        self.assertFalse(result["skipped"]["setup"]["open"])
+        self.assertTrue(result["reopened"]["setup"]["open"])
+
     # -- overview: weekly allowance, the task, its active runs, its usage rows --
 
     def test_overview_weekly_cards_task_line_active_run_and_usage_rows_without_chart(self):
