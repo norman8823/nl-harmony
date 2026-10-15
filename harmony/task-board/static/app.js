@@ -143,7 +143,7 @@ function renderCard(card) {
   };
   badge("status " + card.status);
   if (completion) {
-    badge(completion.label, completion.verified ? "tag-complete" : "unknown",
+    badge(completion.label, completion.verified || completion.kind === "codex" ? "tag-complete" : "unknown",
       [completion.detail].concat(completion.reasons || []).join("\n"));
     const pending = completion.pending_authorization || [];
     if (pending.length) badge(pending.join(", ") + " not authorized", "tag-gate",
@@ -214,12 +214,7 @@ function renderCard(card) {
 }
 
 function sortCards(list) {
-  const verifiedFirst = document.getElementById("verified-first").checked;
   return list.slice().sort((a, b) => {
-    if (verifiedFirst) {
-      const rank = (c) => (c.board.verification === "verified" ? 0 : 1);
-      if (rank(a) !== rank(b)) return rank(a) - rank(b);
-    }
     const priority = (c) => (typeof c.board.priority === "number" ? c.board.priority : 500);
     if (priority(a) !== priority(b)) return priority(a) - priority(b);
     return a.id - b.id;
@@ -233,9 +228,7 @@ function archivable() {
 }
 
 function render() {
-  const onlyVerified = document.getElementById("only-verified").checked;
-  const checked = onlyVerified ? cards.filter((c) => c.board.verification === "verified") : cards;
-  const visible = checked.filter((c) => Boolean(c.board.archived) === showArchived);
+  const visible = cards.filter((c) => Boolean(c.board.archived) === showArchived);
   const archivedCount = cards.filter((c) => c.board.archived).length;
   const toggle = document.getElementById("show-archived");
   toggle.textContent = showArchived ? "Back to board" : "Archived (" + archivedCount + ")";
@@ -243,6 +236,8 @@ function render() {
   const bulk = document.getElementById("archive-done");
   bulk.hidden = showArchived;
   bulk.disabled = !archivable().length;
+  // Park the existing button before rebuilding lanes, retaining its listener.
+  document.getElementById("panel-kanban").append(bulk);
   lanesEl.classList.toggle("archive-view", showArchived);
   lanesEl.replaceChildren();
   (showArchived ? ["Archived"] : STAGES).forEach((stage) => {
@@ -267,6 +262,12 @@ function render() {
     }
     inLane.forEach((card) => body.append(renderCard(card)));
     lane.append(heading, body);
+    if (stage === "Done") {
+      const actions = document.createElement("div");
+      actions.className = "lane-actions";
+      actions.append(bulk);
+      heading.after(actions);
+    }
     lanesEl.append(lane);
   });
 }
@@ -545,8 +546,6 @@ document.getElementById("f-stage").addEventListener("change", (event) => {
 document.getElementById("editor-cancel").addEventListener("click", () => dialog.close());
 document.getElementById("new-card").addEventListener("click", () => openEditor(null));
 document.getElementById("reload").addEventListener("click", () => load());
-document.getElementById("verified-first").addEventListener("change", render);
-document.getElementById("only-verified").addEventListener("change", render);
 document.getElementById("show-archived").addEventListener("click", () => { showArchived = !showArchived; render(); });
 document.getElementById("archive-done").addEventListener("click", (event) => archiveCompleted(event.currentTarget));
 
@@ -1333,7 +1332,9 @@ function historyLine(entry) {
   const changes = Object.entries(entry.changes || {}).map(([name, change]) =>
     name + ": " + shown(change && change.from) + " → " + shown(change && change.to));
   if ((entry.board_fields || []).length) changes.push("board " + entry.board_fields.join(", "));
-  return [entry.at || "time unknown", entry.by || UNKNOWN, String(entry.action || "change").replace(/_/g, " ")]
+  const action = entry.action === "manual_close" && entry.by === "codex-lifecycle"
+    ? "Completed by Codex" : String(entry.action || "change").replace(/_/g, " ");
+  return [entry.at || "time unknown", entry.by || UNKNOWN, action]
     .join(" · ") + (changes.length ? " — " + changes.join("; ") : "");
 }
 
@@ -1350,6 +1351,7 @@ function ticketRecord(card) {
   row("Details", card.details);
   if (card.closure) row("Closure", card.closure.label);
   if (card.completion) row("Completion", card.completion.label);
+  if (card.closure && card.closure.note) row("Completion summary", card.closure.note);
   if (card.completion && (card.completion.reasons || []).length) {
     row("Not supported by the records", card.completion.reasons.join("; "));
   }

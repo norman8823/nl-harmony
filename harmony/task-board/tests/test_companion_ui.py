@@ -536,7 +536,7 @@ class CompanionPage(BoardFixture):
             {"click": "#tab-observability"}, {"snapshot": "observability"}])
         kanban = shots["kanban"]["kanban"]
         self.assertEqual((kanban["cards"], kanban["inspectLinks"], kanban["edit"], kanban["move"]), (4, 4, 4, 4))
-        self.assertTrue(kanban["filters"])
+        self.assertFalse(kanban["filters"])
         self.assertEqual(shots["kanban"]["tabLabels"], ["Observability", "Tasks"])
         self.assertEqual(shots["inspect"]["back"], "← Back to Tasks")
         self.assertEqual({d["id"]: d["open"] for d in shots["polled"]["inspectDetails"]},

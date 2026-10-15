@@ -50,4 +50,23 @@ Harmony currently supports Claude Code and OpenAI Codex. Its underlying task gra
 
 Support for other coding agents, OpenRouter, and locally hosted models is something we'd like to explore as Harmony evolves.
 
+### Can I use Harmony with Codex in another repository?
+
+Yes. Install the local Codex connection once and keep Companion running. Codex
+terminals in any repository on the same computer can create or continue a card
+and update its stage. Follow-up prompts for the same problem reuse that card.
+See the [local setup and first-launch hook review](../README.md#work-from-any-repository).
+
+### Does Companion check completed Codex work again?
+
+No. Codex reports completion with a summary, and the card moves to Done with
+**Completed by Codex**. Formal workflow tasks retain their explicitly declared
+checks and approval gates; ordinary CLI cards do not require a second Companion review.
+
+### Do I need hosting or another account for task tracking?
+
+No. This integration uses your local Codex CLI and a running Companion on the
+same computer. Codex cloud tasks on a separate machine do not automatically sync
+to that local board.
+
 [← Back to Harmony](../README.md)

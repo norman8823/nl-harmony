@@ -49,9 +49,6 @@
 <div class="panel-bar">
   <p class="sub">Cards show compact token/time totals from completed run records; ▶ marks a running Harmony-managed run.</p>
   <div class="bar-actions">
-    <label class="toggle" title="Cards someone checked against their ticket record and evidence first (a board check, not testing)"><input type="checkbox" id="verified-first" checked> Record checked first</label>
-    <label class="toggle" title="Only cards someone checked against their ticket record and evidence (a board check, not testing)"><input type="checkbox" id="only-verified"> Only record checked</label>
-    <button id="archive-done" class="ghost" type="button" title="Hide every completed task in Archived, all or none; nothing is deleted or renumbered">Archive completed</button>
     <button id="show-archived" class="ghost" type="button" aria-pressed="false">Archived</button>
     <button id="reload" class="ghost" type="button">Reload</button>
     <button id="new-card" class="primary" type="button" disabled>Add task</button>
@@ -59,6 +56,7 @@
 </div>
 
 <main id="lanes" class="lanes" aria-label="Task lanes"></main>
+<button id="archive-done" class="ghost small" type="button" hidden title="Move all completed tasks to Archived; nothing is deleted or renumbered">Archive completed</button>
 </section>
 
 <template id="card-template">

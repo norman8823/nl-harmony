@@ -657,6 +657,16 @@ def completion_check(ticket: dict, graph: dict | None, graph_problem: str | None
 _BOOKKEEPING_REASONS = ("already DONE", "this graph completion was already closed or reopened")
 
 
+def closure_record(ticket: dict) -> dict:
+    closure = copy.deepcopy(_dict(_dict(ticket.get("lifecycle")).get("closure"))) or {"kind": "recorded"}
+    # Earlier Codex completions used the manual storage path. Correct their
+    # presentation without rewriting historical records or human closures.
+    if closure.get("kind") == "codex" or (closure.get("kind") == "manual"
+                                          and closure.get("by") == "codex-lifecycle"):
+        closure.update(kind="codex", label="Completed by Codex")
+    return closure
+
+
 def completion_view(ticket: dict, check: dict) -> dict | None:
     """How a DONE card labels its completion, judged again from the workflow records now.
 
@@ -667,11 +677,17 @@ def completion_view(ticket: dict, check: dict) -> dict | None:
     """
     if ticket.get("status") != "DONE":
         return None
-    closure = _dict(_dict(ticket.get("lifecycle")).get("closure")) or {"kind": "recorded"}
-    kind = closure.get("kind") if closure.get("kind") in ("manual", "automatic") else "recorded"
+    closure = closure_record(ticket)
+    kind = closure.get("kind") if closure.get("kind") in ("manual", "automatic", "codex") else "recorded"
     reasons = [r for r in check["reasons"] if not r.startswith(_BOOKKEEPING_REASONS)]
     verified = not reasons and (kind != "automatic" or closure.get("cycle") == check["cycle"])
-    if kind == "automatic":
+    if kind == "codex":
+        label = "Completed by Codex"
+        # These are prerequisites for graph verification, not missing work or
+        # another review required by Companion for a Codex-reported completion.
+        reasons = [r for r in reasons if r not in (
+            "no task graph", "execution authorization is not explicitly granted on the ticket")]
+    elif kind == "automatic":
         label = "Verified complete" if verified else "Closed by graph · records changed"
     else:
         label = ("Closed manually" if kind == "manual" else "Done as recorded") + (
@@ -679,7 +695,8 @@ def completion_view(ticket: dict, check: dict) -> dict | None:
     # Authorizations the current canonical records still lack, named for a compact badge.
     pending = [action for action, marks in _AUTHORIZATION_MARKS if any(m in r for m in marks for r in reasons)]
     return {"kind": kind, "verified": verified, "label": label,
-            "detail": closure.get("label") or RECORDED_CLOSURE, "reasons": reasons,
+            "detail": (closure.get("note") or label) if kind == "codex" else closure.get("label") or RECORDED_CLOSURE,
+            "reasons": reasons,
             "release_unauthorized": "release" in pending, "pending_authorization": pending}
 
 
@@ -837,9 +854,15 @@ def _digest(value: object) -> str:
 
 def current_binding(ticket: dict, revision: int, graph_raw: object) -> dict:
     """What a request is bound to: task revision, gate-relevant ticket content, graph revision and content."""
+    content = {key: value for key, value in ticket.items() if key not in _UNBOUND}
+    if isinstance(content.get("lifecycle"), dict):
+        # Session identity is bookkeeping; a continuation does not alter the
+        # problem, its approval scope or its completion cycle.
+        content["lifecycle"] = {key: value for key, value in content["lifecycle"].items()
+                                if key != "work_sources"}
     return {
         "task_revision": revision,
-        "ticket_sha": _digest({key: value for key, value in ticket.items() if key not in _UNBOUND}),
+        "ticket_sha": _digest(content),
         "graph_revision": graph_raw.get("revision") if isinstance(graph_raw, dict) else None,
         "graph_sha": _digest(graph_raw) if graph_raw is not None else None,
     }
@@ -992,7 +1015,7 @@ def binding_holds(binding: object, ticket: dict, revision: int, graph_raw: objec
     The gate-relevant ticket content and the graph must be identical. The task
     revision may have moved only through revisions written by approval requests
     and decisions themselves (their audit entries carry those revisions), or by
-    an Archive/Restore that changed board visibility only (no `changes`), so a
+    an Archive/Restore or work-session link that changed metadata only (no `changes`), so a
     second request or a view change does not make the first one stale; any
     other write does.
     """
@@ -1007,7 +1030,7 @@ def binding_holds(binding: object, ticket: dict, revision: int, graph_raw: objec
     history = ticket.get("history") if isinstance(ticket.get("history"), list) else []
     own = {entry.get("revision") for entry in history if isinstance(entry, dict)
            and (entry.get("action") in ("approval_request", "approval_decision", "approval_execution")
-                or (entry.get("action") in ("archive", "restore") and "changes" not in entry))}
+                or (entry.get("action") in ("archive", "restore", "work_link") and "changes" not in entry))}
     return all(r in own for r in range(bound + 1, revision + 1))
 
 
@@ -1298,8 +1321,7 @@ class Board:
         status = ticket.get("status") or UNKNOWN
         closure = None
         if status == "DONE":
-            closure = lifecycle.get("closure") if isinstance(lifecycle.get("closure"), dict) else {
-                "kind": "recorded", "label": RECORDED_CLOSURE}
+            closure = closure_record(ticket)
         out = {
             "id": task_id,
             "display": f"Task #{task_id}",
@@ -1382,7 +1404,7 @@ class Board:
         """
         if not isinstance(expected_revision, int) or isinstance(expected_revision, bool):
             raise StoreError("expected_revision (an integer) is required so stale edits are not lost")
-        if action not in ("edit", "done", "reopen", "archive", "restore"):
+        if action not in ("edit", "done", "complete_work", "reopen", "archive", "restore"):
             raise StoreError(f"unknown lifecycle action {action!r}")
         for field in system or {}:
             if field not in SYSTEM_FIELDS:
@@ -1392,6 +1414,28 @@ class Board:
             board = _normalise_board(ticket.get("board"), ticket)
             if board["revision"] != expected_revision:
                 raise StaleEdit(task_id, expected_revision, board["revision"])
+            if action == "complete_work":
+                note = _clean_text(note, "completion summary", limit=500)
+                if not note:
+                    raise StoreError("a completion summary is required")
+                if ticket.get("status") == "DONE":
+                    return self.card(task_id)
+                graph, problem = self.graph(task_id)
+                check = completion_check(ticket, graph, problem)
+                graph_path = self.workflow / "graphs" / f"{task_id}.json"
+                reasons = check["reasons"]
+                latest_requests = {(request.get("action"), request.get("gate_id")): request
+                                   for request in self._requests(task_id, ticket)}
+                if any(request.get("state") != "approved" for request in latest_requests.values()):
+                    reasons = [*reasons, "human approval requests remain unresolved"]
+                if not (graph_path.exists() or graph_path.is_symlink() or ticket.get("graph") is not None):
+                    # Simple intake cards can be closed administratively after
+                    # reported work. That never fabricates a graph, authorization
+                    # or verified completion; all declared gates still apply.
+                    reasons = [reason for reason in reasons if reason not in (
+                        "no task graph", "execution authorization is not explicitly granted on the ticket")]
+                if reasons:
+                    raise StoreError("Task cannot complete: " + "; ".join(reasons), code=409)
             document = self._apply(task_id, ticket, board, dict(patch), action=action, actor=actor, now=now,
                                    note=note, system=system or {}, revision=expected_revision + 1)
             _replace_atomically(self.tickets / f"{task_id}.json", document)
@@ -1402,6 +1446,12 @@ class Board:
         """Mark Done: a labelled administrative closure. Gates, grants and the graph are untouched."""
         return self.update(task_id, {}, expected_revision=expected_revision, actor=actor, now=now,
                            action="done", note=note)
+
+    def complete_work(self, task_id: int, *, expected_revision: object, actor: str, now: str,
+                      note: str | None = None) -> dict:
+        """Codex-reported completion, guarded by declared gates under lock."""
+        return self.update(task_id, {}, expected_revision=expected_revision, actor=actor, now=now,
+                           action="complete_work", note=note)
 
     def reopen(self, task_id: int, *, expected_revision: object, actor: str, now: str,
                status: str | None = None) -> dict:
@@ -1468,7 +1518,7 @@ class Board:
         doc = copy.deepcopy(ticket)
         board = copy.deepcopy(board)
         lifecycle_patch = {field: patch.pop(field) for field in LIFECYCLE_FIELDS if field in patch}
-        if action == "done":
+        if action in ("done", "complete_work"):
             lifecycle_patch["status"] = "DONE"
         elif action == "reopen":
             lifecycle_patch.setdefault("status", reopen_status(doc))
@@ -1548,7 +1598,10 @@ class Board:
             changes["status"] = {"from": old_status, "to": new_status}
             doc["status"] = new_status
         if closing:
-            life["closure"] = {"kind": "manual", "label": MANUAL_CLOSURE, "at": now, "by": actor,
+            codex_completion = action == "complete_work"
+            life["closure"] = {"kind": "codex" if codex_completion else "manual",
+                               "label": "Completed by Codex" if codex_completion else MANUAL_CLOSURE,
+                               "at": now, "by": actor,
                                "previous_status": old_status, "note": note or None}
         if reopening:
             previous = life.get("closure")
@@ -1575,7 +1628,7 @@ class Board:
             doc["updated_at"] = now
         if (changes or board_fields) and isinstance(history, list):
             entry = {"at": now, "by": actor,
-                     "action": "manual_close" if closing else "reopen" if reopening
+                     "action": ("codex_complete" if action == "complete_work" else "manual_close") if closing else "reopen" if reopening
                      else action if action in ("archive", "restore") else "edit",
                      "revision": revision}
             if changes:
@@ -1593,18 +1646,82 @@ class Board:
         so an existing ticket is never replaced and an id is never reused.
         """
         with _Lock(self.lock_path):
-            self.tickets.mkdir(parents=True, exist_ok=True)
-            task_id = max(self._used_ids(), default=0) + 1
-            for _ in range(1000):
-                try:
-                    _create_exclusively(self.tickets / f"{task_id}.json",
-                                        manual_ticket(task_id, fields, actor=actor, now=now))
-                    break
-                except FileExistsError:
-                    task_id += 1
-            else:
-                raise StoreError("no free task id could be reserved", code=500)
+            task_id = self._create_locked(fields, actor=actor, now=now)
         return self.card(task_id)
+
+    def _create_locked(self, fields: dict, *, actor: str, now: str, work_source: dict | None = None) -> int:
+        self.tickets.mkdir(parents=True, exist_ok=True)
+        task_id = max(self._used_ids(), default=0) + 1
+        for _ in range(1000):
+            ticket = manual_ticket(task_id, fields, actor=actor, now=now)
+            if work_source is not None:
+                ticket["lifecycle"]["work_sources"] = [work_source]
+            try:
+                _create_exclusively(self.tickets / f"{task_id}.json", ticket)
+                return task_id
+            except FileExistsError:
+                task_id += 1
+        raise StoreError("no free task id could be reserved", code=500)
+
+    def start_work(self, fields: dict, *, source: str, external_id: str | None,
+                   task_id: int | None, actor: str, now: str) -> tuple[dict, bool]:
+        """Create or reuse an intake card without granting execution permission.
+
+        Identity is scoped to this store and an explicit source/id pair, never
+        a title match. Lookup and allocation share the board lock so concurrent
+        starts cannot create duplicate cards. Identity lives on the ticket,
+        including after archive, rather than in a second task database.
+        """
+        if source not in ("codex", "terminal"):
+            raise StoreError("source must be codex or terminal")
+        if external_id is not None:
+            if not isinstance(external_id, str) or not external_id.strip() or len(external_id) > 500:
+                raise StoreError("external id must be non-empty and at most 500 characters")
+            if any(ord(c) < 32 or ord(c) == 127 for c in external_id):
+                raise StoreError("external id must not contain control characters")
+        identity = {"source": source, "external_id": external_id} if external_id is not None else None
+        if task_id is not None:
+            task_id = parse_task_id(task_id)
+        created = False
+        with _Lock(self.lock_path):
+            matches = []
+            if identity is not None:
+                for candidate in self.ticket_ids():
+                    ticket = self.read_ticket(candidate)
+                    lifecycle = ticket.get("lifecycle") or {}
+                    sources = lifecycle.get("work_sources", []) if isinstance(lifecycle, dict) else None
+                    if not isinstance(sources, list):
+                        raise StoreError(f"Task #{candidate} has invalid work_sources")
+                    if identity in sources:
+                        matches.append(candidate)
+                if len(matches) > 1:
+                    raise StoreError("external identity belongs to multiple tasks; repair the tickets first")
+                if matches and task_id is not None and task_id != matches[0]:
+                    raise StoreError(f"external identity already belongs to Task #{matches[0]}")
+            if task_id is None and matches:
+                task_id = matches[0]
+            if task_id is None:
+                fields = clean_new_task(fields)
+                task_id = self._create_locked(fields, actor=actor, now=now, work_source=identity)
+                created = True
+            else:
+                ticket = self.read_ticket(task_id)
+                if identity is not None and not matches:
+                    lifecycle = ticket.setdefault("lifecycle", {})
+                    if not isinstance(lifecycle, dict) or not isinstance(lifecycle.get("work_sources", []), list):
+                        raise StoreError(f"Task #{task_id} has invalid work_sources")
+                    lifecycle.setdefault("work_sources", []).append(identity)
+                    board = _normalise_board(ticket.get("board"), ticket)
+                    board.update(revision=board["revision"] + 1, updated_at=now, updated_by=actor)
+                    ticket["board"] = board
+                    ticket["updated_at"] = now
+                    history = ticket.get("history", [])
+                    if not isinstance(history, list):
+                        raise StoreError(f"Task #{task_id} has invalid history")
+                    ticket["history"] = history + [{"at": now, "by": actor, "action": "work_link",
+                                                    "revision": board["revision"], "work_source": identity}]
+                    _replace_atomically(self.tickets / f"{task_id}.json", ticket)
+        return self.card(task_id), created
 
     def _used_ids(self) -> set[int]:
         used = set()

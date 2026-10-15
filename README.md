@@ -62,6 +62,47 @@ No frontend build or additional runtime Python packages are required.
 
 **Need a command?** Browse the [CLI Command Reference](docs/cli-reference.md) for every `nlh` command, examples, and approval syntax.
 
+### Work from any repository
+
+For a one-time local setup from this checkout, run `bash install-local.sh`
+with Python 3.11+ and a recent Codex CLI. The installer sets up a dedicated
+user virtual environment and the Codex prompt hook, preserving existing
+settings. It prints the full `nlh` path so shell activation and PATH changes
+are not required for the integration. Restart existing Codex sessions once,
+then start Companion using your existing board directory. No login, access key
+or hosted service is needed. Cloud-to-local synchronization is out of scope.
+When upgrading, restart Companion too, using the same board directory to retain cards.
+
+On the first Codex launch after installation, expect **Hooks need review**.
+Choose **Review hooks** and inspect **Connecting to Harmony** under
+**UserPromptSubmit**. Check that its command points to your Harmony
+installation's Python executable followed by `-m harmony.codex_bridge`, then
+approve that hook. If Harmony is the only pending hook, **Trust all and continue**
+on the initial screen also approves it. Hooks can run outside Codex's sandbox;
+review any other listed hooks before trusting them.
+
+Codex saves approval across ordinary restarts. Harmony updates preserve it when
+the hook settings are unchanged; changed settings or a different installation
+path may require review again. **Continue without trusting** leaves the hook
+inactive, so automatic card tracking will not work.
+
+Install the user-level Codex connection once with `nlh codex install` (a recent
+Codex CLI with lifecycle hooks and Python 3.11+ are required). It preserves other
+Codex hooks/settings and backs up an existing configuration. Restart already-open
+Codex sessions once. With Companion running, open ordinary Codex in **any repository
+on the same machine** and describe your work in natural language. The global
+prompt hook directs Codex to check existing tasks before creating or continuing
+a card on that Companion's board. No per-task command or Harmony checkout is
+required. Look for **Created Harmony task #N** or **Continuing Harmony task #N**;
+`nlh codex status` reports configuration and active boards. Multiple active boards
+require selection; closing Companion leaves the hook idle. Ordinary questions
+are not tasks, and follow-up prompts keep the existing card. This does not connect
+separate machines automatically or bypass a project's execution permissions.
+Codex updates that same card to In Progress while working and Blocked when
+waiting, then calls `complete_task` when the requested work is finished. A turn
+ending is not completion. Declared completion gates remain enforced; simple
+cards show Completed by Codex with its summary, without an additional Companion review.
+
 ## Five-minute walkthrough
 
 Start with a sample project so you can try the interface:

@@ -1,8 +1,22 @@
 # Harmony v0.1.0
 
-Local public-release snapshot, prepared for human publication approval. No public
-repository creation, upload, tag, package publication or visibility change has
-been performed. Fresh local history contains only the sanitized release snapshot.
+This update adds local Codex CLI task tracking to the existing public release.
+Published history is retained; development history and local runtime state are excluded.
+
+## Local Codex CLI task tracking
+
+- One running Companion receives tasks from Codex terminals in any repository on
+  the same computer. No hosted service, login, or per-task wrapper is needed.
+- Follow-up prompts, turns, and runs reuse the same task. Codex updates its stage
+  to In Progress, Blocked when waiting, and Done when the requested work is complete.
+- Completed cards show **Completed by Codex** with the summary, including earlier
+  Codex completions. Companion does not require an additional review.
+- **Archive completed** lives in the Done column; record-check filter toggles are removed.
+- The local installer preserves existing Codex settings and saved hook approval.
+  The README explains the first-launch hook review and upgrade restarts.
+- Stale edits and declared workflow gates remain enforced. Completion errors now
+  report Companion's actual refusal instead of inferring missing requirements.
+- Occupied Companion ports show restart instructions instead of a cleanup traceback.
 
 ## Included
 
@@ -19,6 +33,7 @@ been performed. Fresh local history contains only the sanitized release snapshot
 
 Python 3.10+ on macOS/Linux; no runtime Python dependencies or frontend build.
 MIT license retained. Model runs require separately installed authenticated CLIs.
+Local Codex hook configuration requires Python 3.11+ and a Codex CLI with hooks.
 
 ## Known limits
 

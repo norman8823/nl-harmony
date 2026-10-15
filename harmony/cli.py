@@ -6,6 +6,9 @@
     nlh approval request|decide|execute|show <task-id> ...   revision-bound human approvals
     nlh task relate <task-id> --follow-up-of <id> | nlh task resolve [--task-id ID]
     nlh task archive|restore <task-id> [--expected-revision N]   board visibility only
+    nlh task list [--all] [--json]
+    nlh task start [--task-id ID | --new] [--title TITLE] [--source codex|terminal]
+                   [--external-id KEY] [--json] [-- COMMAND ...]
 
 Every command resolves one project: `--config <harmony.json>`, else the nearest
 `harmony.json` at or above `--project` (default: the current directory), else
@@ -18,8 +21,11 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import errno
 import importlib.util
 import json
+import os
+import subprocess
 import sys
 import webbrowser
 from pathlib import Path
@@ -102,12 +108,19 @@ def cmd_companion(project: dict[str, Any], args: argparse.Namespace) -> int:
     server = _load_board_server()
     (project["workflow_dir"] / "tickets").mkdir(parents=True, exist_ok=True)
     port = project["port"] if args.port is None else args.port
-    httpd = server.build_server(
-        project["root"], project["workflow_dir"], port=port, session="nlh-companion", actor="ui",
-        runs_dir=project["runs_dir"],
-    )
+    try:
+        httpd = server.build_server(
+            project["root"], project["workflow_dir"], port=port, session="nlh-companion", actor="ui",
+            runs_dir=project["runs_dir"],
+        )
+    except OSError as exc:
+        if exc.errno == errno.EADDRINUSE:
+            raise ConfigError(f"Companion port {port} is already in use. Stop the existing Companion "
+                              "with Ctrl+C in its terminal, then restart using the same board directory. "
+                              "To identify the listener on macOS/Linux, run: "
+                              f"lsof -nP -iTCP:{port} -sTCP:LISTEN") from None
+        raise
     httpd.url = f"http://127.0.0.1:{httpd.server_address[1]}"
-    httpd.start_quota()  # weekly allowance is collected from startup, before any page asks
     print(f"Harmony companion on {httpd.url}  (Ctrl-C to stop)", flush=True)
     print(f"  project:     {project['root']}", flush=True)
     print(f"  config:      {project['config'] or 'none (defaults)'}", flush=True)
@@ -118,12 +131,39 @@ def cmd_companion(project: dict[str, Any], args: argparse.Namespace) -> int:
     if not args.no_browser:
         webbrowser.open(httpd.url)
     try:
-        httpd.serve_forever()
+        from .codex_bridge import advertise
+        with advertise(httpd, project):
+            httpd.start_quota()  # weekly allowance is collected from startup
+            httpd.serve_forever()
     except KeyboardInterrupt:
         print("\nstopped")
     finally:
         httpd.server_close()
     return 0
+
+
+def cmd_codex(args: argparse.Namespace) -> int:
+    from . import codex_bridge
+
+    home = (args.codex_home or Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))).expanduser()
+    try:
+        if args.codex_cmd == "install":
+            probe = subprocess.run(["codex", "features", "list"], capture_output=True, text=True, timeout=10)
+            if probe.returncode or not any(line.split()[:1] == ["hooks"] for line in probe.stdout.splitlines()):
+                raise ConfigError("this Codex CLI does not expose supported lifecycle hooks; update Codex first. "
+                                  "No configuration was changed")
+            path = codex_bridge.install(home)
+            print(f"Harmony prompt hook installed in {path}. Restart existing Codex sessions once. "
+                  "With Companion running, new Codex prompts receive task intake automatically.")
+        else:
+            installed = codex_bridge.is_installed(home)
+            active = codex_bridge.active_companions()
+            print(json.dumps({"hook_installed": installed, "active_boards": [
+                {"project": item["project"], "workflow_dir": item["workflow_dir"], "port": item["port"]}
+                for item in active], "ready": installed and len(active) == 1}))
+        return 0
+    except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
+        raise ConfigError(f"Codex connection: {exc}") from exc
 
 
 
@@ -297,6 +337,57 @@ def cmd_task(project: dict[str, Any], args: argparse.Namespace) -> int:
     store = _store()
     board = store.Board(project["workflow_dir"])
     try:
+        if args.task_cmd == "list":
+            tasks = []
+            for task_id in board.ticket_ids():
+                ticket = board.read_ticket(task_id)
+                if not args.all and ticket.get("status") == "DONE":
+                    continue
+                tasks.append({"task_id": task_id, "title": ticket.get("title"),
+                              "status": ticket.get("status"), "scope": ticket.get("scope"),
+                              "lifecycle": ticket.get("lifecycle")})
+            if args.json:
+                print(json.dumps({"ok": True, "tasks": tasks}))
+            else:
+                for item in tasks:
+                    print(f"#{item['task_id']} [{item['status']}] {item['title']}")
+            return 0
+        if args.task_cmd == "start":
+            given = args.task_id or (None if args.new else os.environ.get("HARMONY_TASK_ID"))
+            source = args.source or ("codex" if os.environ.get("CODEX_THREAD_ID") else "terminal")
+            external_id = args.external_id
+            # An explicit task wins over session context: one thread can work
+            # on several distinct problems. Only bind a supplied external id
+            # when the caller has already selected the task.
+            if external_id is None and source == "codex" and not args.new and not given:
+                external_id = os.environ.get("CODEX_THREAD_ID")
+            command = list(args.wrapped)
+            if command and command[0] == "--":
+                command.pop(0)
+            if args.json and command:
+                raise ConfigError("--json cannot be combined with a wrapped command")
+            # Do not bypass a project's custom intake allocator with a local allocation.
+            if not given and _load_board_server().intake_path(project["root"]).is_file():
+                raise ConfigError("this project uses an intake allocator; create through Companion first, "
+                                  "then pass --task-id")
+            card, created = board.start_work(
+                {"title": args.title, "details": args.details}, source=source, external_id=external_id,
+                task_id=store.parse_task_id(given) if given else None, actor="nlh-start", now=_now())
+            result = {"ok": True, "task_id": card["id"], "created": created,
+                      "status": card["status"], "title": card["ticket_title"]}
+            if args.json:
+                print(json.dumps(result))
+            else:
+                print(f"{'Created' if created else 'Reusing'} Task #{card['id']} "
+                      f"[{card['status']}] {card['ticket_title']}", flush=True)
+            if command:
+                try:
+                    result_code = subprocess.run(command, cwd=project["root"],
+                                                 env={**os.environ, "HARMONY_TASK_ID": str(card["id"])}).returncode
+                except OSError as exc:
+                    raise ConfigError(f"Task #{card['id']} retained; cannot launch command: {exc}") from exc
+                return result_code if result_code >= 0 else 128 - result_code
+            return 0
         if args.task_cmd == "relate":
             card = board.relate(args.task_id, follow_up_of=args.follow_up_of, actor=args.by, now=_now(),
                                 note=args.note)
@@ -313,8 +404,6 @@ def cmd_task(project: dict[str, Any], args: argparse.Namespace) -> int:
                   f"(revision {card['board']['revision']}); its ticket, id, history and graph are unchanged.")
             return 0
         # resolve: an explicit id (or HARMONY_TASK_ID), never a guess or a text match.
-        import os
-
         given = args.task_id or os.environ.get("HARMONY_TASK_ID")
         if not given:
             open_ids = [(i, board.read_ticket(i)) for i in board.ticket_ids()]
@@ -346,6 +435,12 @@ def main(argv: list[str] | None = None) -> int:
     comp = sub.add_parser("companion", help="start the local board for this project and open it")
     comp.add_argument("--port", type=int, default=None, help="default: board.port or 8765; 0 picks a free port")
     comp.add_argument("--no-browser", action="store_true", help="do not open a browser")
+
+    codex = sub.add_parser("codex", help="connect ordinary Codex prompts to the running Companion")
+    codex_sub = codex.add_subparsers(dest="codex_cmd", required=True)
+    for name in ("install", "status"):
+        connection = codex_sub.add_parser(name)
+        connection.add_argument("--codex-home", type=Path, help="default: CODEX_HOME or ~/.codex")
 
     ins = sub.add_parser("inspect", help="checkpoint, graph and run summary for one task")
     ins.add_argument("task_id")
@@ -416,6 +511,20 @@ def main(argv: list[str] | None = None) -> int:
 
     task = sub.add_parser("task", help="explicit task identity (follow-up relation, id resolution) and archive")
     task_sub = task.add_subparsers(dest="task_cmd", required=True)
+    start = task_sub.add_parser("start", help="create or reuse a work card, optionally launch a command with its id")
+    start.add_argument("--title", help="required for a new task; never used for deduplication")
+    start.add_argument("--details", default="")
+    identity = start.add_mutually_exclusive_group()
+    identity.add_argument("--task-id", help="continue an existing task (default: HARMONY_TASK_ID)")
+    identity.add_argument("--new", action="store_true", help="separate problem: ignore inherited task/thread ids")
+    start.add_argument("--source", choices=("codex", "terminal"),
+                       help="default: codex when CODEX_THREAD_ID is set, otherwise terminal")
+    start.add_argument("--external-id", help="stable work identity; codex defaults to CODEX_THREAD_ID")
+    start.add_argument("--json", action="store_true", help="print task_id and created as JSON; no wrapped command")
+    start.add_argument("wrapped", nargs=argparse.REMAINDER, metavar="-- COMMAND ...")
+    listing = task_sub.add_parser("list", help="inspect existing tasks before starting or continuing work")
+    listing.add_argument("--all", action="store_true", help="include DONE and archived tickets")
+    listing.add_argument("--json", action="store_true")
     rel = task_sub.add_parser("relate", help="record that a task is a follow-up of an earlier one")
     rel.add_argument("task_id")
     rel.add_argument("--follow-up-of", required=True)
@@ -432,6 +541,8 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     try:
+        if args.command == "codex":
+            return cmd_codex(args)
         project = resolve_project(args.project, args.config)
         if args.command == "companion":
             return cmd_companion(project, args)

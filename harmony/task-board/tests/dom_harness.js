@@ -151,6 +151,7 @@ function snapshot() {
         c.querySelector(".archive").hidden ? null : text(c.querySelector(".archive"))])),
       archivedToggle: text(doc.getElementById("show-archived")),
       bulk: { hidden: doc.getElementById("archive-done").hidden, disabled: doc.getElementById("archive-done").disabled },
+      bulkLane: doc.getElementById("archive-done").closest(".lane")?.dataset.stage || null,
       fields: Object.fromEntries([...doc.querySelectorAll("#lanes .card")].map((c) => [c.dataset.id, {
         owner: text(c.querySelector(".owner")), next: text(c.querySelector(".next-action")),
         gate: text(c.querySelector("dd.gate")), nextSource: c.querySelector(".next-action").title }])),

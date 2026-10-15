@@ -335,6 +335,13 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self._send(200, body, content_type)
             return
+        if path == "/api/harmony-connection":
+            record = getattr(self.server, "harmony_connection", None)
+            if record is None:
+                self._error(404, "this Companion has not enabled Codex prompt discovery")
+            else:
+                self._json(200, record)
+            return
         if path == "/api/board":
             self._json(200, self._board_payload())
             return
@@ -358,10 +365,26 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         if not self._guard():
             return
+        if self.path == "/api/tasks/start":
+            try:
+                data = self._body()
+                store._refuse_fields(data, ("title", "details", "task_id", "source", "external_id"))
+                if data.get("task_id") is None and intake_path(self.server.repo).is_file():
+                    raise store.StoreError("This project uses its intake allocator; create through Add task first, "
+                                           "then supply task_id", code=409)
+                card, created = self.board.start_work(
+                    {"title": data.get("title"), "details": data.get("details", "")},
+                    source=data.get("source", "codex"), external_id=data.get("external_id"),
+                    task_id=data.get("task_id"), actor="codex-intake", now=now_iso())
+            except store.StoreError as exc:
+                self._error(exc.code, exc.message)
+                return
+            self._json(200, {"ok": True, "card": card, "created": created})
+            return
         path = self.path.split("?")[0]
         parts = [part for part in path.strip("/").split("/") if part]
         if (len(parts) == 4 and parts[:2] == ["api", "tasks"] and parts[2].isdigit()
-                and parts[3] in ("done", "reopen", "archive", "restore")):
+                and parts[3] in ("done", "complete", "reopen", "archive", "restore")):
             self._lifecycle_action(int(parts[2]), parts[3])
             return
         if parts == ["api", "tasks", "archive"]:
@@ -386,7 +409,8 @@ class Handler(BaseHTTPRequestHandler):
         """Mark Done, Reopen, Archive or Restore. Only the ticket is written; nothing is started."""
         try:
             payload = self._body()
-            allowed = {"done": {"expected_revision", "note"}, "reopen": {"expected_revision", "status"}}.get(
+            allowed = {"done": {"expected_revision", "note"}, "complete": {"expected_revision", "note"},
+                       "reopen": {"expected_revision", "status"}}.get(
                 action, {"expected_revision"})
             unknown = sorted(set(payload) - allowed)
             if unknown:
@@ -396,6 +420,9 @@ class Handler(BaseHTTPRequestHandler):
             if action == "done":
                 card = self.board.close(task_id, note=store._clean_text(payload.get("note"), "note", limit=500),
                                         **common)
+            elif action == "complete":
+                card = self.board.complete_work(task_id, note=payload.get("note"),
+                                                **{**common, "actor": "codex-lifecycle"})
             elif action == "reopen":
                 card = self.board.reopen(task_id, status=payload.get("status"), **common)
             else:
@@ -610,7 +637,8 @@ class BoardServer(ThreadingHTTPServer):
 
     def server_close(self) -> None:
         super().server_close()
-        close = getattr(self.quota, "close", None)
+        # TCPServer calls this during failed construction, before quota exists.
+        close = getattr(getattr(self, "quota", None), "close", None)
         if close is not None:
             close()  # stops the worker and any app-server read in progress
 

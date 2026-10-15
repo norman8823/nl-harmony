@@ -317,6 +317,30 @@ class ArchivePage(ArchiveFixture):
     page = tl.LifecyclePage.page
     real = tl.LifecyclePage.real
 
+    def test_codex_completion_and_legacy_card_show_summary_without_manual_or_unverified_label(self):
+        for task_id in (70, 71):
+            self.write({"id": task_id, "title": "Codex completed work", "status": "BACKLOG",
+                        "authorization": {"granted": False}, "board": {"revision": 1},
+                        "lifecycle": {}, "history": []})
+        status, body = self.call("POST", "/api/tasks/70/complete", {
+            "expected_revision": 1, "note": "Verified clean working tree"})
+        self.assertEqual(status, 200, body)
+        legacy = self.ticket(71)
+        legacy["status"] = "DONE"
+        legacy["lifecycle"]["closure"] = {"kind": "manual", "by": "codex-lifecycle",
+            "label": "Manual closure: administrative only", "note": "Verified tracked project files"}
+        self.write(legacy)
+        shots = self.page("#kanban", self.real(), [{"snapshot": "board"},
+            {"click": '#lanes a[data-inspect="70"]'}, {"snapshot": "inspect"}])
+        for task_id in ("70", "71"):
+            flags = shots["board"]["kanban"]["flags"][task_id]
+            self.assertIn("Completed by Codex", flags)
+            self.assertNotIn("Unverified", flags)
+            self.assertNotIn("Closed manually", flags)
+            self.assertEqual(shots["board"]["kanban"]["lanes"][task_id], "Done")
+        self.assertIn("Completion summary", shots["inspect"]["inspect"])
+        self.assertIn("Verified clean working tree", shots["inspect"]["inspect"])
+
     def test_lanes_badges_archive_view_restore_and_bulk(self):
         self.auto_closed(20)
         self.write(graph_ticket(7))
@@ -340,6 +364,8 @@ class ArchivePage(ArchiveFixture):
             {"click": "#show-archived"}, {"snapshot": "archived"},
             {"click": '#lanes .card[data-id="1"] .archive'}, {"snapshot": "restored"}])
         board = shots["board"]["kanban"]
+        self.assertEqual(board["bulkLane"], "Done")
+        self.assertFalse(board["filters"])
         self.assertEqual(board["laneTitles"], ["To Do", "In Progress", "Blocked", "Done"])
         self.assertNotIn("1", board["lanes"])
         self.assertNotIn("10", board["lanes"])

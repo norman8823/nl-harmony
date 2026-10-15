@@ -133,6 +133,10 @@ Lanes: *To Do* (the stored stage stays `Next`), *In Progress* (blue),
 *Blocked* (amber), *Done* (green). Badges are compact; the full text is in the
 tooltip and Inspect:
 
+- **Completed by Codex** identifies a completion reported through the local
+  Codex tools. Its tooltip and Inspect show the completion summary. Companion
+  does not require another review. Earlier Codex closures stored as manual by
+  `codex-lifecycle` display the same label without rewriting their history.
 - **Completion** (DONE only), judged again from the workflow records with the
   automatic-completion rules: *Verified complete* for an automatic closure the
   records still support; *Closed by graph · records changed*; *Closed
@@ -145,8 +149,8 @@ tooltip and Inspect:
   publication.
 - **Record checked / Record unchecked** is the editable `board.verification`
   (`verified` / `unknown`): a person checked this card against its ticket
-  record and evidence. It is not testing or software verification; the
-  *Record checked first* / *Only record checked* filters use it as before.
+  record and evidence. It is not testing or software verification.
+  This badge does not filter or reorder the board.
 - **Approval** badges are separate from completion and the record check.
   An intake warning shows as *unassessed at intake*.
 
@@ -262,7 +266,32 @@ same Host/Origin guard as every write.
 
 ## Task identity
 
-New tasks are created only explicitly (**Add task** / `POST /api/tasks`).
+For seamless terminal intake from any repository on the same machine, run
+`nlh codex install` once and restart already-open Codex sessions. A Companion
+started with `nlh companion` advertises its live instance to the user-level
+`UserPromptSubmit` hook. Codex receives the shared board's intake commands and
+the originating project, checks continuations, and uses the native `harmony_local`
+stdio tools to create or reuse the card through `POST /api/tasks/start`. The
+adapter calls the existing loopback Companion, needs no third-party SDK, and
+avoids filesystem writes to another repository from the agent's sandbox.
+Codex creates or reuses the card
+without a user-entered per-task command. Discovery verifies the live instance
+at `GET /api/harmony-connection`; stale descriptors are not active connections.
+`nlh codex status` shows configured hooks and reachable boards. Multiple boards
+need selection; the hook is idle when no Companion is running. Local terminal
+discovery does not automatically cross into a separate cloud machine.
+
+New tasks are created through **Add task** / `POST /api/tasks` or `nlh task start`.
+The latter creates or reuses a canonical card before cloud or terminal work.
+One card represents the problem across turns and runs, not one card per prompt.
+`nlh task list --all --json` exposes existing scopes and session links for a
+continuation check; `nlh task start --task-id ID` continues the selected task.
+Stable source/external IDs (Codex defaults to `CODEX_THREAD_ID`) are linked on
+the ticket under the board lock, so retries and concurrent starts reuse a card.
+Pass an existing task ID when continuing in a different thread. Similar titles
+alone do not establish identity. New cards carry the same BACKLOG/no-grant
+defaults as Add task. Reuse preserves content, approvals and archive/closure state.
+See the root README and `AGENTS.md` for startup instructions and terminal launchers.
 Runs, reviews, corrections, handoffs and approvals continue an existing task
 by its explicit id: `nlh record` refuses a numeric id with no ticket (a plain
 non-numeric id stays a legacy standalone record) and unsafe ids;

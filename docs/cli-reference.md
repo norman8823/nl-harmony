@@ -12,6 +12,11 @@ A quick reference for the `nlh` command. Run `nlh --help` to see top-level comma
 | `nlh inspect <id>` | Print task checkpoints, workflow graph, recorded runs, and evidence summary. |
 | `nlh record --task-id <id> --role <role> -- COMMAND...` | Run a Claude or Codex invocation with telemetry associated with an existing task. |
 | `nlh task resolve [--task-id <id>]` | Resolve a known task ID, or show the open tasks when an ID is missing. |
+| `nlh task list --all --json` | Inspect existing tasks before creating or continuing work. |
+| `nlh task start --title "Problem" --json` | Create or reuse a canonical task for a work request. |
+| `nlh task start --task-id <id> --json` | Continue the same task across prompts, turns, and runs. |
+| `nlh codex install` | Install the user-level prompt hook and local Companion tools. |
+| `nlh codex status` | Show connection configuration and active local boards. |
 | `nlh task relate <id> --follow-up-of <other-id>` | Link an existing task to an earlier task without deleting either record. |
 | `nlh task archive <id>` | Hide a completed task from the active board, preserving its history. |
 | `nlh task restore <id>` | Return an archived task to the board. |
@@ -22,7 +27,16 @@ A quick reference for the `nlh` command. Run `nlh --help` to see top-level comma
 | `nlh --version` | Print the installed Harmony version. |
 | `nlh --help` | Show general CLI help. |
 
-**Creating tasks:** Use **Companion → Tasks → Add task**. There is no `nlh task create` subcommand in v0.1.
+**Creating tasks:** Use **Companion → Tasks → Add task**, `nlh task start`, or
+describe new work in a connected local Codex terminal. There is no `nlh task create`
+subcommand. Before creating a card, check existing task scopes; follow-up prompts
+for the same problem continue the existing task ID.
+
+For automatic tracking from any repository, follow the README's
+[local Codex setup and first-launch hook review](../README.md#work-from-any-repository).
+Codex uses the local tools to update In Progress, Blocked, and Done; completed
+work is labeled **Completed by Codex** with its summary. Ordinary questions and
+the end of a turn do not by themselves create or complete a task.
 
 ## Start and inspect
 
