@@ -1,4 +1,4 @@
-# Optional Claude and Codex workflow
+# Claude and Codex workflow
 
 This guide is optional. Use it for the full Claude and Codex workflow, with
 recorded runs, independent review, and approval gates. Basic Codex task tracking
