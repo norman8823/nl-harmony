@@ -45,95 +45,99 @@ One local browser window brings the moving pieces together.
 
 *Inspect a task to explore its workflow, agent runs, review evidence, approval history, and detailed resource usage.*
 
-## Install
+## Install and start
 
-Harmony runs its **orchestration and Companion locally**; Claude and Codex still use their own model services. You'll need macOS or Linux, Python **3.10+**, and Git. Authenticated Claude Code and Codex CLIs are required for model runs and supported allowance readings, but you can explore the board without them.
+You'll need **macOS or Linux**, [Python 3.11+](https://www.python.org/downloads/),
+[Git](https://git-scm.com/downloads), and [Codex CLI](https://developers.openai.com/codex/cli/).
+Make sure you can open Codex and are signed in before continuing.
+
+### Work from any repository
+
+Set up Harmony once, then use Codex in any project on the same computer.
+Follow these steps in order.
+
+**1. Download Harmony**
+
+Open a terminal and paste:
 
 ```bash
 git clone https://github.com/norman8823/nl-harmony.git
 cd nl-harmony
-python3 -m venv .venv
-. .venv/bin/activate
-python3 -m pip install .
-nlh --version
 ```
 
-No frontend build or additional runtime Python packages are required.
+**2. Install it**
 
-**Need a command?** Browse the [CLI Command Reference](docs/cli-reference.md) for every `nlh` command, examples, and approval syntax.
-
-### Work from any repository
-
-For a one-time local setup from this checkout, run `bash install-local.sh`
-with Python 3.11+ and a recent Codex CLI. The installer sets up a dedicated
-user virtual environment and the Codex prompt hook, preserving existing
-settings. It prints the full `nlh` path so shell activation and PATH changes
-are not required for the integration. Restart existing Codex sessions once,
-then start Companion using your existing board directory. No login, access key
-or hosted service is needed. Cloud-to-local synchronization is out of scope.
-When upgrading, restart Companion too, using the same board directory to retain cards.
-
-On the first Codex launch after installation, expect **Hooks need review**.
-Choose **Review hooks** and inspect **Connecting to Harmony** under
-**UserPromptSubmit**. Check that its command points to your Harmony
-installation's Python executable followed by `-m harmony.codex_bridge`, then
-approve that hook. If Harmony is the only pending hook, **Trust all and continue**
-on the initial screen also approves it. Hooks can run outside Codex's sandbox;
-review any other listed hooks before trusting them.
-
-Codex saves approval across ordinary restarts. Harmony updates preserve it when
-the hook settings are unchanged; changed settings or a different installation
-path may require review again. **Continue without trusting** leaves the hook
-inactive, so automatic card tracking will not work.
-
-Install the user-level Codex connection once with `nlh codex install` (a recent
-Codex CLI with lifecycle hooks and Python 3.11+ are required). It preserves other
-Codex hooks/settings and backs up an existing configuration. Restart already-open
-Codex sessions once. With Companion running, open ordinary Codex in **any repository
-on the same machine** and describe your work in natural language. The global
-prompt hook directs Codex to check existing tasks before creating or continuing
-a card on that Companion's board. No per-task command or Harmony checkout is
-required. Look for **Created Harmony task #N** or **Continuing Harmony task #N**;
-`nlh codex status` reports configuration and active boards. Multiple active boards
-require selection; closing Companion leaves the hook idle. Ordinary questions
-are not tasks, and follow-up prompts keep the existing card. This does not connect
-separate machines automatically or bypass a project's execution permissions.
-Codex updates that same card to In Progress while working and Blocked when
-waiting, then calls `complete_task` when the requested work is finished. A turn
-ending is not completion. Declared completion gates remain enforced; simple
-cards show Completed by Codex with its summary, without an additional Companion review.
-
-## Five-minute walkthrough
-
-Start with a sample project so you can try the interface:
+In that same terminal, run:
 
 ```bash
-demo_dir="$(mktemp -d /tmp/harmony-demo.XXXXXX)"
-cd "$demo_dir"
-git init -q
-printf '.workflow/\n.direct-runs/\nharmony.json\n' > .gitignore
-cat > harmony.json <<'JSON'
-{
-  "workflow_dir": ".workflow",
-  "runs_dir": ".direct-runs",
-  "board": {"port": 8765}
-}
-JSON
-nlh companion --no-browser --port 0
+bash install-local.sh
 ```
 
-Open the printed local URL. Under **Tasks**, choose **Add task** and create `Write a greeting`, with details `Add a tiny greeting function and a focused test.` Try editing, Inspect, Mark Done, and Reopen. These board actions **do not authorize a code release**.
+Wait for the installer to finish.
 
-Stop Companion with **Ctrl-C**. The task record remains in `.workflow/tickets/`. You can inspect it from the CLI:
+**3. Open Harmony**
+
+Still in the same terminal, paste:
 
 ```bash
-nlh task resolve --task-id 1
-nlh inspect 1
+~/.local/share/harmony/venv/bin/nlh companion
 ```
 
-The empty project is intentional: no model is invoked or charged simply by starting Companion.
+A browser window opens. Click **Tasks** to see your board. Leave this terminal running.
+
+**4. Open Codex**
+
+Open another terminal in the project you want to work on, then run:
+
+```bash
+codex
+```
+
+If Codex was already open during installation, close it and open it again.
+
+On the first launch, Codex may show **Hooks need review**. Choose **Review hooks**,
+check the **Connecting to Harmony** entry, and approve it. If Harmony is the only
+hook listed, **Trust all and continue** also works. Review any other hooks before
+trusting them: hooks can run commands outside Codex's sandbox.
+
+This is normally a one-time approval. Ordinary restarts should remember it.
+
+**5. Try your first task**
+
+Type this into Codex:
+
+> Create hello.txt containing "Hello from Harmony", then read it back to check it.
+
+Watch the **Tasks** board. One card should appear, move to **In Progress**, then
+**Done** with **Completed by Codex**. Open **Inspect** to see the completion summary.
+For a small task, In Progress may only appear briefly.
+
+Keep working normally in Codex. Follow-up messages about the same task reuse its
+card. If Codex needs your input, the card moves to **Blocked** until work resumes.
+Keep Companion running while you work.
+
+<details>
+<summary>Updating or restarting Harmony</summary>
+
+To update, open a terminal in your existing Harmony folder and run:
+
+```bash
+git pull --ff-only origin main
+bash install-local.sh
+```
+
+Stop Companion with **Ctrl+C**, then start it again using the command in step 3
+from the same Harmony folder. This keeps your existing cards. Restart Codex too.
+Unchanged hook settings keep their approval; changed settings may need review again.
+
+</details>
+
+Need help? See [Troubleshooting](#troubleshooting).
 
 ## How the workflow runs
+
+The rest of this guide is optional. Use it when you want the full Claude and
+Codex workflow, with recorded runs, independent review, and approval gates.
 
 Harmony supplies durable records and checked commands; your agents or scripts invoke them. A typical task moves through **plan → implement → independent review → targeted correction (if needed) → human decision → verified action**.
 
@@ -191,6 +195,19 @@ Task state, checkpoints, approval evidence, and run records stay in local `.work
 **Harmony is a toolkit for coordinating the agents you already use.**
 
 **Better Together.**
+
+## Troubleshooting
+
+- **The board does not open:** use the local address printed in the Companion terminal.
+- **The address is already in use:** Companion may already be running. Stop the existing
+  Companion with Ctrl+C in its terminal before starting another.
+- **No card appears:** check that Companion is running, restart Codex, and make sure
+  you approved Connecting to Harmony. Skipping approval leaves the hook inactive.
+
+Companion and Codex CLI must run on the same computer. Codex cloud tasks on a
+separate machine do not automatically appear on your local board.
+
+For more commands, see the [CLI reference](docs/cli-reference.md).
 
 ## Questions?
 
