@@ -18,6 +18,7 @@
     <p id="run-state" class="run-state" data-state="unknown" title="Harmony-managed runs">
       <span class="dot" aria-hidden="true"></span><span id="run-state-text">Checking…</span>
     </p>
+    <button type="button" class="ghost small" id="setup-open" aria-haspopup="dialog" aria-controls="setup-guide">Setup</button>
     <label class="toggle" title="Refresh Observability and Details every 3 s"><input type="checkbox" id="obs-live" checked> Live</label>
   </div>
 </header>
@@ -85,6 +86,26 @@
     </div>
   </article>
 </template>
+
+<dialog id="setup-guide" aria-labelledby="setup-title" aria-describedby="setup-intro">
+  <div class="setup-content">
+    <p class="setup-eyebrow">GET STARTED</p>
+    <h2 id="setup-title">Welcome to Harmony 🤝</h2>
+    <p id="setup-intro">Codex is your first connection. Let it help you set up the full Claude Code + Codex workflow.</p>
+    <h3>1. Check your tools</h3>
+    <p id="setup-note" class="hint" role="status" aria-live="polite">Checking your local installation…</p>
+    <ul id="setup-checks" class="setup-checks" aria-label="Setup prerequisites"></ul>
+    <h3>2. Finish setup in Codex</h3>
+    <p>Open a fresh Codex session in your project and run the bundled skill:</p>
+    <code id="setup-command">$harmony-setup</code>
+    <p class="hint">Codex will guide Claude Code sign-in, configuration, and an optional test task. No agents are launched by this screen.</p>
+    <div class="dialog-actions">
+      <button type="button" class="ghost" id="setup-refresh">Recheck</button>
+      <button type="button" class="ghost" id="setup-close">Skip for now</button>
+      <button type="button" class="primary" id="setup-copy">Copy command</button>
+    </div>
+  </div>
+</dialog>
 
 <dialog id="editor">
   <form id="editor-form" method="dialog">
