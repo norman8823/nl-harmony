@@ -1708,5 +1708,5 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden && document.getElementById("obs-live").checked && quotaDue()) loadQuota();
 });
 route();
-if (!setupSeen()) openSetup();
+if (!setupSeen() && (!location.hash || location.hash === "#observability")) openSetup();
 if (quotaDue()) loadQuota(); // at startup on any view, Tasks included
