@@ -143,7 +143,7 @@ def cmd_companion(project: dict[str, Any], args: argparse.Namespace) -> int:
 
 
 def cmd_codex(args: argparse.Namespace) -> int:
-    from . import codex_bridge
+    from . import codex_bridge, setup
 
     home = (args.codex_home or Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))).expanduser()
     try:
@@ -153,6 +153,11 @@ def cmd_codex(args: argparse.Namespace) -> int:
                 raise ConfigError("this Codex CLI does not expose supported lifecycle hooks; update Codex first. "
                                   "No configuration was changed")
             path = codex_bridge.install(home)
+            status, skill_path = setup.install_setup_skill(home)
+            if status == "conflict":
+                print(f"Existing Codex skill preserved at {skill_path}. Resolve the name conflict to use $harmony-setup.")
+            else:
+                print(f"Harmony setup skill installed at {skill_path} (invoke $harmony-setup in Codex).")
             print(f"Harmony prompt hook installed in {path}. Restart existing Codex sessions once. "
                   "With Companion running, new Codex prompts receive task intake automatically.")
         else:
@@ -166,6 +171,20 @@ def cmd_codex(args: argparse.Namespace) -> int:
         raise ConfigError(f"Codex connection: {exc}") from exc
 
 
+
+
+def cmd_doctor(args: argparse.Namespace) -> int:
+    from . import setup
+
+    result = setup.report()
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        for check in result["checks"]:
+            print(f"{check['state'].upper():7} {check['label']}: {check['detail']}")
+        print(result["note"])
+        print("Open Codex and run $harmony-setup to finish and verify the workflow.")
+    return 0  # A diagnostic report is not a claim that setup has passed.
 
 
 def cmd_inspect(project: dict[str, Any], args: argparse.Namespace) -> int:
@@ -442,6 +461,9 @@ def main(argv: list[str] | None = None) -> int:
         connection = codex_sub.add_parser(name)
         connection.add_argument("--codex-home", type=Path, help="default: CODEX_HOME or ~/.codex")
 
+    doctor = sub.add_parser("doctor", help="check local onboarding prerequisites without launching model CLIs")
+    doctor.add_argument("--json", action="store_true")
+
     ins = sub.add_parser("inspect", help="checkpoint, graph and run summary for one task")
     ins.add_argument("task_id")
 
@@ -543,6 +565,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "codex":
             return cmd_codex(args)
+        if args.command == "doctor":
+            return cmd_doctor(args)
         project = resolve_project(args.project, args.config)
         if args.command == "companion":
             return cmd_companion(project, args)
