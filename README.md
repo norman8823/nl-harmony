@@ -33,9 +33,10 @@ The process remains deliberately controlled. Harmony records task state, depende
 
 ## Meet Harmony Companion
 
-One local browser window brings the moving pieces together.
+Companion is a local browser window that brings the moving pieces together. Upon launch you will see two tab views.
 
-**Tasks** is a persistent Kanban board to create, edit, track, close, reopen, and archive development work. **Observability** shows measured allowance, model/role contributions, cache reuse, and the latest task. Open **Inspect** for the underlying workflow graph, run details, review evidence, and approval history.
+**Tasks** is a persistent Kanban board to create, edit, track, close, reopen, and archive development work. 
+**Observability** shows measured allowance, model/role contributions, cache reuse, and the latest task. Open **Inspect** for the underlying workflow graph, run details, review evidence, and approval history.
 
 ![Harmony Companion with Observability and Tasks views](docs/images/companion-observability-tasks.png)
 
