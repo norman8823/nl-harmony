@@ -116,102 +116,12 @@ Keep working normally in Codex. Follow-up messages about the same task reuse its
 card. If Codex needs your input, the card moves to **Blocked** until work resumes.
 Keep Companion running while you work.
 
-<details>
-<summary>Updating or restarting Harmony</summary>
+## Help and guides
 
-To update, open a terminal in your existing Harmony folder and run:
-
-```bash
-git pull --ff-only origin main
-bash install-local.sh
-```
-
-Stop Companion with **Ctrl+C**, then start it again using the command in step 3
-from the same Harmony folder. This keeps your existing cards. Restart Codex too.
-Unchanged hook settings keep their approval; changed settings may need review again.
-
-</details>
-
-Need help? See [Troubleshooting](#troubleshooting).
-
-## How the workflow runs
-
-The rest of this guide is optional. Use it when you want the full Claude and
-Codex workflow, with recorded runs, independent review, and approval gates.
-
-Harmony supplies durable records and checked commands; your agents or scripts invoke them. A typical task moves through **plan → implement → independent review → targeted correction (if needed) → human decision → verified action**.
-
-**1. Establish the task and its context.** Define acceptance criteria and obtain execution authorization in the canonical ticket. The checkpoint keeps a compact handoff; the graph tracks allowed phases and bounded parallel investigation.
-
-```bash
-D="$(python3 -c 'from pathlib import Path; import harmony; print(Path(harmony.__file__).parent / "direct-workflow")')"
-
-python3 "$D/task_checkpoint.py" update --task-id 1 \
-  --phase planning --next-action "Define acceptance criteria"
-python3 "$D/task_graph.py" init --task-id 1 \
-  --investigators 0 --correction-ceiling 1
-python3 "$D/task_graph.py" status --task-id 1
-```
-
-**2. Record work by role.** Once a task is authorized, `nlh record` captures machine-readable execution and attributes the result to its existing task ID. The commands below illustrate the explicit handoffs; prepare the referenced prompt files and use your supported model identifiers.
-
-```bash
-nlh record --task-id 1 --role planner -- \
-  codex exec --json --sandbox read-only -m YOUR_CODEX_MODEL - < plan.md
-
-export HARMONY_PR_GUARD="$D/direct-workflow-pr-guard.py"
-nlh record --task-id 1 --role writer -- \
-  claude -p "Implement the approved task" --model opus \
-  --output-format stream-json --verbose \
-  --settings "$D/release-settings.json"
-
-nlh record --task-id 1 --role reviewer -- \
-  codex exec --json --sandbox read-only -m YOUR_CODEX_MODEL - < review.md
-```
-
-Corrections return only the named review findings to the writer; the reviewer checks the resulting delta. Optional investigators use a pinned `--base-commit` and read-only isolation. Their findings must be recorded before review can start. The graph constrains execution; **it does not automatically spawn agents or choose models**.
-
-**3. Request a decision, then prove the outcome.** When the required graph steps and review pass, the executing agent can request approval for a *specific* final action:
-
-```bash
-nlh approval request 1 --action commit \
-  --summary "Verified local changes ready to commit" \
-  --evidence evidence/verification.md
-nlh approval show 1 --json
-```
-
-The human approves, requests changes with feedback, or defers. If approved, the agent must perform the action, verify it, and record evidence using `nlh approval execute`. Commit, merge, and publish are separate permissions; the Companion backend performs none of them itself.
-
-For more on CLI options, use `nlh --help`, `nlh record --help`, and the in-repository [workflow](harmony/direct-workflow/README.md) and [Companion/approval](harmony/task-board/README.md) guides.
-
-## What's measured (and what isn't)
-
-Harmony keeps **per-invocation token totals** separate from session-cumulative data so runs aren't double-counted. It records model identities when reported, qualifies a Codex model when only the requested name is known, and treats unreported values as unknown rather than zero. Cache reuse describes measured input, **not money saved**. API-equivalent estimates are not subscription charges.
-
-Weekly allowance comes from different provider interfaces: Codex's app-server seven-day rate limits and Claude Code's authenticated native `/usage` view, checked locally about every five minutes. Claude's terminal display is not a versioned API, so parsing may fail; stale readings keep their original timestamps. Disable collection with `HARMONY_CODEX_QUOTA=0` or `HARMONY_CLAUDE_CLI_QUOTA=0` if needed.
-
-Task state, checkpoints, approval evidence, and run records stay in local `.workflow/` and `.direct-runs/` directories. Keep those paths, local configuration, and credentials out of Git. Harmony has no required cloud dashboard or billing service.
-
-**Harmony is a toolkit for coordinating the agents you already use.**
-
-**Better Together.**
-
-## Troubleshooting
-
-- **The board does not open:** use the local address printed in the Companion terminal.
-- **The address is already in use:** Companion may already be running. Stop the existing
-  Companion with Ctrl+C in its terminal before starting another.
-- **No card appears:** check that Companion is running, restart Codex, and make sure
-  you approved Connecting to Harmony. Skipping approval leaves the hook inactive.
-
-Companion and Codex CLI must run on the same computer. Codex cloud tasks on a
-separate machine do not automatically appear on your local board.
-
-For more commands, see the [CLI reference](docs/cli-reference.md).
-
-## Questions?
-
-[Read the FAQ](docs/faq.md)
+- [Troubleshooting, updates, and restarts](docs/troubleshooting.md)
+- [Frequently asked questions and measurement details](docs/faq.md)
+- [Optional Claude and Codex workflow](docs/workflow.md)
+- [CLI command reference](docs/cli-reference.md)
 
 ## License
 

@@ -69,4 +69,44 @@ No. This integration uses your local Codex CLI and a running Companion on the
 same computer. Codex cloud tasks on a separate machine do not automatically sync
 to that local board.
 
+### What does Harmony measure?
+
+When supported run records are available, Harmony shows token usage, reported
+model names, roles, and cache reuse. It keeps each invocation's totals separate
+from session totals so runs are not counted twice. Creating a task card alone
+does not guarantee that token measurements are available.
+
+If only the requested model name is known, Harmony labels it accordingly.
+Missing measurements stay **unknown**, rather than appearing as zero.
+
+### Are the cost estimates my actual bill?
+
+No. API-equivalent estimates use list pricing to describe recorded usage. They
+are not subscription charges or a billing statement. Cache reuse describes
+measured input; it is not a promise of money saved.
+
+### Where do weekly allowance readings come from?
+
+Codex readings come from its app-server seven-day rate limits. Claude Code
+readings come from its authenticated native `/usage` view. Harmony checks
+locally about every five minutes.
+
+Claude's terminal display is not a versioned API, so a reading may fail to parse.
+Stale readings keep their original timestamps; unknown readings stay unknown.
+Both providers need their own authenticated CLIs for supported readings.
+
+To disable collection, start Companion with `HARMONY_CODEX_QUOTA=0` or
+`HARMONY_CLAUDE_CLI_QUOTA=0` in its environment. For setup and troubleshooting,
+see the [Companion guide](../harmony/task-board/README.md#weekly-allowance).
+
+### Where are my tasks and run records stored?
+
+Task state, checkpoints, and approval evidence stay in the board folder's local
+`.workflow/` directory. Run records stay in `.direct-runs/`. Keep those paths,
+local configuration, and credentials out of Git. Harmony does not require a
+cloud dashboard or billing service.
+
+For common setup issues, see [Troubleshooting](troubleshooting.md). For the
+optional recorded Claude and Codex workflow, see the [workflow guide](workflow.md).
+
 [← Back to Harmony](../README.md)
