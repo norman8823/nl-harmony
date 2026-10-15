@@ -117,6 +117,19 @@ Keep working normally in Codex. Follow-up messages about the same task reuse its
 card. If Codex needs your input, the card moves to **Blocked** until work resumes.
 Keep Companion running while you work.
 
+### Set up the full multi-agent workflow
+
+The steps above connect **Codex task tracking** to Companion. To set up the full
+**Claude Code + Codex** workflow, open a new Codex session and run:
+
+```text
+$harmony-setup
+```
+
+Harmony ships with this built-in skill. It guides you through Claude Code setup,
+readiness checks, and an optional first multi-agent task. The workflow uses
+explicit agent launches and approvals rather than running autonomously.
+
 ## Help and guides
 
 - [Troubleshooting](docs/troubleshooting.md)
