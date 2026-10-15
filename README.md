@@ -118,9 +118,9 @@ Keep Companion running while you work.
 
 ## Help and guides
 
-- [Troubleshooting, updates, and restarts](docs/troubleshooting.md)
-- [Frequently asked questions and measurement details](docs/faq.md)
-- [Optional Claude and Codex workflow](docs/workflow.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Frequently Asked Questions](docs/faq.md)
+- [Claude/Codex workflow guide](docs/workflow.md)
 - [CLI command reference](docs/cli-reference.md)
 
 ## License
