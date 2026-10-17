@@ -1645,10 +1645,68 @@ document.getElementById("obs-live").addEventListener("change", (event) => {
   else refreshRunState();
 });
 
+/* First-run guide stays read-only. Codex performs any assisted configuration. */
+const setupGuide = document.getElementById("setup-guide");
+const setupSeenKey = "harmony.setup.seen.v1";
+
+function setupSeen() {
+  try { return localStorage.getItem(setupSeenKey) === "1"; }
+  catch (_) { return false; }
+}
+
+async function refreshSetup() {
+  const note = document.getElementById("setup-note");
+  const list = document.getElementById("setup-checks");
+  note.textContent = "Checking local prerequisites…";
+  try {
+    const data = await api("/api/setup");
+    list.replaceChildren();
+    (data.checks || []).forEach((check) => {
+      const item = document.createElement("li");
+      item.dataset.state = check.state === "ready" ? "ready" : "missing";
+      const label = document.createElement("strong");
+      label.textContent = check.label;
+      const detail = document.createElement("span");
+      detail.textContent = check.detail;
+      item.append(label, detail);
+      list.append(item);
+    });
+    note.textContent = data.ready_for_assisted_setup
+      ? "Tools found. Use the skill to verify authentication and try a workflow."
+      : "Complete the missing steps, then recheck.";
+  } catch (_) {
+    note.textContent = "Could not check setup. Try nlh doctor in your terminal.";
+  }
+}
+
+function openSetup() {
+  if (!setupGuide.open) setupGuide.showModal();
+  refreshSetup();
+}
+
+document.getElementById("setup-open").addEventListener("click", openSetup);
+document.getElementById("setup-refresh").addEventListener("click", refreshSetup);
+document.getElementById("setup-close").addEventListener("click", () => setupGuide.close());
+document.getElementById("setup-copy").addEventListener("click", async () => {
+  const button = document.getElementById("setup-copy");
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.writeText) throw Error("clipboard not available");
+    await navigator.clipboard.writeText("$harmony-setup");
+    button.textContent = "Copied";
+  } catch (_) {
+    document.getElementById("setup-note").textContent = "Select the command above to copy it manually.";
+  }
+});
+setupGuide.addEventListener("close", () => {
+  try { localStorage.setItem(setupSeenKey, "1"); } catch (_) { /* private browsing */ }
+  document.getElementById("setup-copy").textContent = "Copy command";
+});
+
 // Observability is the default view; #kanban opens the board, #inspect/<id> a task.
 window.addEventListener("hashchange", route);
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && document.getElementById("obs-live").checked && quotaDue()) loadQuota();
 });
 route();
+if (!setupSeen() && (!location.hash || location.hash === "#observability")) openSetup();
 if (quotaDue()) loadQuota(); // at startup on any view, Tasks included

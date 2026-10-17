@@ -1,8 +1,10 @@
 # Claude and Codex workflow
 
-This guide is optional. Use it for the full Claude and Codex workflow, with
-recorded runs, independent review, and approval gates. Basic Codex task tracking
-only needs the [README setup](../README.md#install-and-start).
+This guide is optional. For assisted setup, open Codex and run
+`$harmony-setup`. The skill checks the environment and guides your first
+Claude + Codex workflow. This page is the manual reference for recorded runs,
+independent review, and approval gates. Basic Codex task tracking only needs
+the [README setup](../README.md#install-and-start).
 
 Harmony supplies durable records and checked commands; your agents or scripts invoke them. A typical task moves through **plan → implement → independent review → targeted correction (if needed) → human decision → verified action**.
 

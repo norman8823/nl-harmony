@@ -156,6 +156,11 @@ function snapshot() {
         owner: text(c.querySelector(".owner")), next: text(c.querySelector(".next-action")),
         gate: text(c.querySelector("dd.gate")), nextSource: c.querySelector(".next-action").title }])),
       addTask: { text: text(doc.getElementById("new-card")), disabled: doc.getElementById("new-card").disabled } },
+    setup: { open: doc.getElementById("setup-guide").open,
+      note: text(doc.getElementById("setup-note")),
+      checks: [...doc.querySelectorAll("#setup-checks li")].map((node) => ({
+        state: node.dataset.state, label: text(node.querySelector("strong")),
+        detail: text(node.querySelector("span")) })) },
     editor: (() => {
       const status = doc.getElementById("f-status");
       return { open: doc.getElementById("editor").open, title: doc.getElementById("f-title").value,

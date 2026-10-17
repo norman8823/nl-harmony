@@ -9,6 +9,7 @@ A quick reference for the `nlh` command. Run `nlh --help` to see top-level comma
 | Command | Purpose |
 |---|---|
 | `nlh companion` | Launch the local Observability and Tasks interface. |
+| `nlh doctor --json` | Read-only checks for installed CLIs, Codex connection, and bundled setup skill. It does not verify model authentication. |
 | `nlh inspect <id>` | Print task checkpoints, workflow graph, recorded runs, and evidence summary. |
 | `nlh record --task-id <id> --role <role> -- COMMAND...` | Run a Claude or Codex invocation with telemetry associated with an existing task. |
 | `nlh task resolve [--task-id <id>]` | Resolve a known task ID, or show the open tasks when an ID is missing. |

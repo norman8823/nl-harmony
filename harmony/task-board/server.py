@@ -64,6 +64,10 @@ sys.path.insert(0, str(HERE))
 
 import store  # noqa: E402
 
+# Companion and the CLI share the same side-effect-free readiness checks.
+sys.path.insert(0, str(HERE.parent.parent))
+from harmony import setup as setup_checks  # noqa: E402
+
 # The run-record summary is not reimplemented here: the board imports the
 # same library the `run_observability.py` CLI uses.
 OBSERVABILITY_DIR = HERE.parent / "direct-workflow"
@@ -341,6 +345,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._error(404, "this Companion has not enabled Codex prompt discovery")
             else:
                 self._json(200, record)
+            return
+        if path == "/api/setup":
+            self._json(200, {"ok": True, **setup_checks.report()})
             return
         if path == "/api/board":
             self._json(200, self._board_payload())
